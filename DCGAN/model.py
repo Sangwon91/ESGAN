@@ -142,6 +142,7 @@ class DCGAN:
             logdir="logdir",
             batch_size,
             z_size,
+            output_writer,
             voxel_size=64,
             bottom_size=4,
             bottom_filters=256,
@@ -198,6 +199,7 @@ class DCGAN:
                 train_gen_per_disc)
             )
 
+        self.output_writer = output_writer
         self.logdir = logdir
         self.batch_size = batch_size
         self.size = voxel_size
@@ -368,9 +370,7 @@ class DCGAN:
                     # Generate energy grid samples
                     for j, sample in enumerate(samples):
                         stem = "sample_{}".format(j)
-                        write_visit_input(
-                            stem, sample, self.size, sample_dir,
-                            energy_scale=[-6000, 6000])
+                        self.output_writer(stem, sample, self.size, sample_dir)
 
                 print("{}/{}  ITER: {}".format(logdir, date, i))
 
