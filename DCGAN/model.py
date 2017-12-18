@@ -143,6 +143,7 @@ class DCGAN:
             batch_size,
             z_size,
             output_writer,
+            save_every=1000,
             voxel_size=64,
             bottom_size=4,
             bottom_filters=256,
@@ -199,6 +200,7 @@ class DCGAN:
                 train_gen_per_disc)
             )
 
+        self.save_every = save_every
         self.output_writer = output_writer
         self.logdir = logdir
         self.batch_size = batch_size
@@ -299,8 +301,6 @@ class DCGAN:
 
 
     def train(self):
-        self.save_every = 100
-
         # Make log paths.
         logdir = self.logdir
 

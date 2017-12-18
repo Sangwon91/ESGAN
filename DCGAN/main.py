@@ -39,6 +39,7 @@ def main():
         dataset=dataset,
         logdir=args.logdir,
         output_writer=output_writer,
+        save_every=10,
         batch_size=16,
         z_size=500,
         voxel_size=32,
