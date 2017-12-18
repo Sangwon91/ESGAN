@@ -4,7 +4,7 @@ import tensorflow as tf
 def make_energy_grid_dataset(*,
     path,
     shape,
-    batch_size,
+    #batch_size,
     invert=True,
     rotate=True,
     move=True,
@@ -81,6 +81,6 @@ def make_energy_grid_dataset(*,
         if prefetch_size:
             dataset = dataset.prefetch(prefetch_size)
 
-        dataset = dataset.batch(batch_size)
+        #dataset = dataset.batch(batch_size)
 
     return dataset

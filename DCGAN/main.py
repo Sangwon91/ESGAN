@@ -23,7 +23,6 @@ def main():
         rotate=False,
         shape=32,
         prefetch_size=300,
-        batch_size=batch_size,
         shuffle_size=300,
         energy_limit=[-5000.0, 5000.0],
         energy_scale=[-6000.0, 6000.0],

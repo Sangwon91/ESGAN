@@ -203,7 +203,7 @@ class DCGAN:
         self.size = voxel_size
         self.train_gen_per_disc = train_gen_per_disc
         # Make iterator from the dataset.
-        self.iterator = dataset.make_initializable_iterator()
+        self.iterator = dataset.batch(batch_size).make_initializable_iterator()
 
         # Build nueral network.
         self.generator = Generator(
