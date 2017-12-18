@@ -41,43 +41,49 @@ conv3d_transpose = functools.partial(
     kernel_initializer=kernel_initializer,
 )
 
-"""
-batch_normalization = functools.partial(
-    tf.layers.batch_normalization,
-    momentum=0.99,
-)
-"""
-
 # Source: https://github.com/maxorange/voxel-dcgan/blob/master/ops.py
 # Automatic updator version of batch normalization.
-def batch_normalization(x, training, name="batch_normalization", decay=0.99, epsilon=1e-5):
+def batch_normalization(
+        x, training, name="batch_normalization", decay=0.99, epsilon=1e-5):
     train = training
 
     shape = x.get_shape().as_list()
     with tf.variable_scope(name):
-        beta = tf.get_variable('beta', shape[-1:], initializer=tf.constant_initializer(0.))
-        gamma = tf.get_variable('gamma', shape[-1:], initializer=tf.random_normal_initializer(1., 0.02))
-        moving_mean = tf.get_variable('moving_mean', shape[-1:], initializer=tf.constant_initializer(0.), trainable=False)
-        moving_var = tf.get_variable('moving_var', shape[-1:], initializer=tf.constant_initializer(1.), trainable=False)
+        beta = tf.get_variable('beta', shape[-1:],
+            initializer=tf.constant_initializer(0.))
+        gamma = tf.get_variable('gamma', shape[-1:],
+            initializer=tf.random_normal_initializer(1., 0.02))
+        moving_mean = tf.get_variable('moving_mean', shape[-1:],
+            initializer=tf.constant_initializer(0.), trainable=False)
+        moving_var = tf.get_variable('moving_var', shape[-1:],
+            initializer=tf.constant_initializer(1.), trainable=False)
 
         if moving_mean not in tf.moving_average_variables():
-            tf.add_to_collection(tf.GraphKeys.MOVING_AVERAGE_VARIABLES, moving_mean)
-            tf.add_to_collection(tf.GraphKeys.MOVING_AVERAGE_VARIABLES, moving_var)
+            collection = tf.GraphKeys.MOVING_AVERAGE_VARIABLES
+            tf.add_to_collection(collection, moving_mean)
+            tf.add_to_collection(collection, moving_var)
 
         def train_mode():
             # execute at training time
             axes = list(range(len(shape) - 1))
-            batch_mean, batch_var = tf.nn.moments(x, axes=axes) # !!! TEST NEEDED !!!
-            update_mean = tf.assign_sub(moving_mean, (1-decay) * (moving_mean-batch_mean))
-            update_var = tf.assign_sub(moving_var, (1-decay) * (moving_var- batch_var))
+            # It really works?
+            batch_mean, batch_var = tf.nn.moments(x, axes=axes)
+            update_mean = tf.assign_sub(
+                moving_mean, (1-decay) * (moving_mean-batch_mean)
+            )
+            update_var = tf.assign_sub(
+                moving_var, (1-decay) * (moving_var- batch_var)
+            )
 
             # Automatically update global means and variances.
             with tf.control_dependencies([update_mean, update_var]):
-                return tf.nn.batch_normalization(x, batch_mean, batch_var, beta, gamma, epsilon)
+                return tf.nn.batch_normalization(
+                            x, batch_mean, batch_var, beta, gamma, epsilon)
 
         def test_mode():
             # execute at test time
-            return tf.nn.batch_normalization(x, moving_mean, moving_var, beta, gamma, epsilon)
+            return tf.nn.batch_normalization(
+                       x, moving_mean, moving_var, beta, gamma, epsilon)
 
         return tf.cond(train, train_mode, test_mode)
 
