@@ -4,8 +4,6 @@ import argparse
 import numpy as np
 import tensorflow as tf
 
-from utils import write_visit_input
-
 from model import DCGAN
 from dataset import make_energy_grid_dataset
 
@@ -40,7 +38,6 @@ def main():
         voxel_size=32,
         bottom_size=4,
         bottom_filters=256,
-        #bottom_filters=128,
         rate=0.5,
         top_size=4,
         filter_unit=32,
