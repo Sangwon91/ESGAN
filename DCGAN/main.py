@@ -18,7 +18,7 @@ def main():
     args = parser.parse_args()
     os.environ["CUDA_VISIBLE_DEVICES"] = args.devices
 
-    energy_scale = [-5000.0, 5000.0]
+    energy_scale = [-3000.0, 5000.0]
 
     output_writer = functools.partial(
         write_visit_input, energy_scale=energy_scale)
@@ -30,7 +30,7 @@ def main():
         shape=32,
         prefetch_size=300,
         shuffle_size=300,
-        energy_limit=[-5000.0, 5000.0],
+        energy_limit=[-3000.0, 5000.0],
         energy_scale=energy_scale,
         invert=True,
     )
