@@ -18,7 +18,7 @@ def main():
     args = parser.parse_args()
     os.environ["CUDA_VISIBLE_DEVICES"] = args.devices
 
-    energy_scale = [-6000.0, 6000.0]
+    energy_scale = [-5000.0, 5000.0]
 
     output_writer = functools.partial(
         write_visit_input, energy_scale=energy_scale)
@@ -39,7 +39,7 @@ def main():
         dataset=dataset,
         logdir=args.logdir,
         output_writer=output_writer,
-        save_every=10,
+        save_every=100,
         batch_size=16,
         z_size=500,
         voxel_size=32,
