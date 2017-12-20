@@ -24,7 +24,7 @@ def main():
         write_visit_input, energy_scale=energy_scale)
 
     dataset = make_energy_grid_dataset(
-        path="/home/FRAC32/IZA",
+        path="/home/FRAC32/PCOD_HIGH",
         extension="griddata",
         rotate=False,
         shape=32,
