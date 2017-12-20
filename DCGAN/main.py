@@ -41,7 +41,7 @@ def main():
         output_writer=output_writer,
         save_every=100,
         batch_size=16,
-        z_size=500,
+        z_size=1024,
         voxel_size=32,
         bottom_size=4,
         bottom_filters=256,
