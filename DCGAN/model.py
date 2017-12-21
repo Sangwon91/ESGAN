@@ -1,4 +1,5 @@
 import os
+import math
 import datetime
 
 import numpy as np
@@ -165,41 +166,6 @@ class DCGAN:
 
         self.date = datetime.datetime.now().isoformat()
 
-        with open("{}/config-{}".format(logdir, self.date), "w") as f:
-            f.write("""
-                batch_size {}
-                z_size {}
-                voxel_size {}
-                bottom_size {}
-                bottom_filters {}
-                rate {}
-                top_size {}
-                filter_unit {}
-                minibatch {}
-                minibatch_kernel_size {}
-                minibatch_dim_per_kernel {}
-                l2_loss {}
-                g_learning_rate {}
-                d_learning_rate {}
-                train_gen_per_disc {}
-                """.format(
-                batch_size,
-                z_size,
-                voxel_size,
-                bottom_size,
-                bottom_filters,
-                rate,
-                top_size,
-                filter_unit,
-                minibatch,
-                minibatch_kernel_size,
-                minibatch_dim_per_kernel,
-                l2_loss,
-                g_learning_rate,
-                d_learning_rate,
-                train_gen_per_disc)
-            )
-
         self.save_every = save_every
         self.output_writer = output_writer
         self.logdir = logdir
@@ -301,6 +267,42 @@ class DCGAN:
 
 
     def train(self):
+        # Log training options
+        with open("{}/config-{}".format(logdir, self.date), "w") as f:
+            f.write("""
+                batch_size {}
+                z_size {}
+                voxel_size {}
+                bottom_size {}
+                bottom_filters {}
+                rate {}
+                top_size {}
+                filter_unit {}
+                minibatch {}
+                minibatch_kernel_size {}
+                minibatch_dim_per_kernel {}
+                l2_loss {}
+                g_learning_rate {}
+                d_learning_rate {}
+                train_gen_per_disc {}
+                """.format(
+                batch_size,
+                z_size,
+                voxel_size,
+                bottom_size,
+                bottom_filters,
+                rate,
+                top_size,
+                filter_unit,
+                minibatch,
+                minibatch_kernel_size,
+                minibatch_dim_per_kernel,
+                l2_loss,
+                g_learning_rate,
+                d_learning_rate,
+                train_gen_per_disc)
+            )
+
         # Make log paths.
         logdir = self.logdir
 
@@ -375,35 +377,24 @@ class DCGAN:
                 print("{}/{}  ITER: {}".format(logdir, date, i))
 
 
-    def generate_samples(self, checkpoint, n_samples=5):
+    def generate_samples(self, sample_dir, checkpoint, n_samples):
         saver = tf.train.Saver(var_list=self.vars_to_save, max_to_keep=1)
 
-        j = 0
         with tf.Session() as sess:
             saver.restore(sess, checkpoint)
 
             try:
-                os.makedirs("samples")
+                os.makedirs(sample_dir)
             except Exception as e:
                 print(e)
-                #return
 
             size = self.batch_size
 
-            z1 = np.random.uniform(-1.0, 1.0,
-                        size=[self.generator.z_size])
-
-            for i in range(n_samples):
-                print(i)
-                z0 = z1
-
-                z1 = np.random.uniform(-1.0, 1.0,
-                            size=[self.generator.z_size])
-
-                x_space = np.linspace(0, 1, size, endpoint=True)
-
-                z = [(1.0-x)*z0 + x*z1 for x in x_space]
-                z = np.array(z)
+            idx = 0
+            n_iters = math.ceil(n_samples / size)
+            for i in range(n_iters):
+                z = np.random.uniform(-1.0, 1.0,
+                        size=[size, self.generator.z_size])
 
                 feed_dict = {
                     self.generator.z: z,
@@ -414,8 +405,9 @@ class DCGAN:
                     feed_dict=feed_dict,
                 )
 
-                for j, sample in enumerate(samples, start=j+1):
-                    stem = "sample_{}".format(j)
-                    write_visit_input(
-                        stem, sample, self.size, "samples",
-                        energy_range=[-5000, 5000])
+                # Generate energy grid samples
+                for sample in samples:
+                    stem = "ann_{}".format(idx)
+                    self.output_writer(stem, sample, self.size, sample_dir)
+
+                    idx += 1
