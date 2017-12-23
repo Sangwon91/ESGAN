@@ -267,42 +267,6 @@ class DCGAN:
 
 
     def train(self):
-        # Log training options
-        with open("{}/config-{}".format(logdir, self.date), "w") as f:
-            f.write("""
-                batch_size {}
-                z_size {}
-                voxel_size {}
-                bottom_size {}
-                bottom_filters {}
-                rate {}
-                top_size {}
-                filter_unit {}
-                minibatch {}
-                minibatch_kernel_size {}
-                minibatch_dim_per_kernel {}
-                l2_loss {}
-                g_learning_rate {}
-                d_learning_rate {}
-                train_gen_per_disc {}
-                """.format(
-                batch_size,
-                z_size,
-                voxel_size,
-                bottom_size,
-                bottom_filters,
-                rate,
-                top_size,
-                filter_unit,
-                minibatch,
-                minibatch_kernel_size,
-                minibatch_dim_per_kernel,
-                l2_loss,
-                g_learning_rate,
-                d_learning_rate,
-                train_gen_per_disc)
-            )
-
         # Make log paths.
         logdir = self.logdir
 
