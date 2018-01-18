@@ -40,29 +40,36 @@ def make_energy_grid_dataset(*,
 
         if move:
             # Data augmentation
-            n = random.randint(0, shape[0] - 1)
-            x = tf.concat([x[:n, :, :, :], x[n:, :, :, :]], axis=0)
+            n = tf.random_uniform(
+                [1], minval=0, maxval=shape[0], dtype=tf.int32)[0]
+            x = tf.concat([x[n:, :, :, :], x[:n, :, :, :]], axis=0)
 
-            n = random.randint(0, shape[1] - 1)
-            x = tf.concat([x[:, :n, :, :], x[:, n:, :, :]], axis=1)
+            n = tf.random_uniform(
+                [1], minval=0, maxval=shape[0], dtype=tf.int32)[0]
+            x = tf.concat([x[:, n:, :, :], x[:, :n, :, :]], axis=1)
 
-            n = random.randint(0, shape[2] - 1)
-            x = tf.concat([x[:, :, :n, :], x[:, :, n:, :]], axis=2)
+            n = tf.random_uniform(
+                [1], minval=0, maxval=shape[0], dtype=tf.int32)[0]
+            x = tf.concat([x[:, :, n:, :], x[:, :, :n, :]], axis=2)
 
+        """
         if rotate:
-            pos = [
+            pos = tf.constant([
                 [0, 1, 2, 3],
                 [2, 0, 1, 3],
                 [1, 2, 0, 3]
-            ]
+            ], dtype=tf.int32)
 
-            n = random.randint(0, 2)
+            n = tf.random_uniform(
+                [1], minval=0, maxval=3, dtype=tf.int32)[0]
 
             pos = pos[n]
 
             # Rotation.
             x = tf.transpose(x, pos)
+        """
 
+        x.set_shape(shape)
         return x
 
 
