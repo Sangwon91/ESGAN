@@ -52,7 +52,7 @@ def make_energy_grid_dataset(*,
                 [1], minval=0, maxval=shape[0], dtype=tf.int32)[0]
             x = tf.concat([x[:, :, n:, :], x[:, :, :n, :]], axis=2)
 
-        """
+        
         if rotate:
             pos = tf.constant([
                 [0, 1, 2, 3],
@@ -67,7 +67,7 @@ def make_energy_grid_dataset(*,
 
             # Rotation.
             x = tf.transpose(x, pos)
-        """
+        
 
         x.set_shape(shape)
         return x
@@ -91,3 +91,6 @@ def make_energy_grid_dataset(*,
         #dataset = dataset.batch(batch_size)
 
     return dataset
+
+if __name__ == "__main__":
+    pass
