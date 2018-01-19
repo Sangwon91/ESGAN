@@ -22,7 +22,7 @@ dense = functools.partial(
 
 conv3d = functools.partial(
     tf.layers.conv3d,
-    kernel_size=4,
+    kernel_size=5,
     strides=2,
     padding="SAME",
     activation=None,
