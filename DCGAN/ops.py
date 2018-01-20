@@ -1,4 +1,6 @@
+import math
 import functools
+
 import tensorflow as tf
 
 def sigmoid_log_with_logits(x):
@@ -19,9 +21,57 @@ dense = functools.partial(
     kernel_initializer=kernel_initializer,
 )
 
-
+"""
 conv3d = functools.partial(
     tf.layers.conv3d,
+    kernel_size=5,
+    strides=2,
+    padding="SAME",
+    activation=None,
+    use_bias=False,
+    kernel_initializer=kernel_initializer,
+)
+"""
+
+def pbc_pad3d(x, lp, rp, name="PBC"):
+    with tf.variable_scope(name):
+        x = tf.concat([x[:, -lp:, :, :, :], x, x[:, :rp, :, :, :]], axis=1)
+        x = tf.concat([x[:, :, -lp:, :, :], x, x[:, :, :rp, :, :]], axis=2)
+        x = tf.concat([x[:, :, :, -lp:, :], x, x[:, :, :, :rp, :]], axis=3)
+
+    return x
+
+
+def pbc_conv3d(x, pbc=True, **kwargs):
+    if pbc:
+        # Calculate padding size.
+        s = kwargs["strides"]
+        k = kwargs["kernel_size"]
+
+        # i = input size.
+        i = x.get_shape().as_list()[1]
+        # o = output size.
+        o = math.ceil(float(i) / float(s))
+        # Total padding size.
+        p = (o-1)*s + k - i
+        # calc left padding = lp and right padding = rp
+        lp = p // 2
+        rp = p - lp
+
+        # Pad.
+        x = pbc_pad3d(x, lp, rp)
+
+        kwargs["padding"] = "VALID"
+
+    # Do convolution.
+    x = tf.layers.conv3d(x, **kwargs)
+
+    return x
+
+
+conv3d = functools.partial(
+    pbc_conv3d,
+    pbc=True,
     kernel_size=5,
     strides=2,
     padding="SAME",
@@ -104,3 +154,17 @@ def minibatch_discrimination(x, num_kernels, dim_per_kernel, name="minibatch"):
         minibatch_features = tf.reduce_sum(tf.exp(-l1_dists), axis=2)
 
         return tf.concat([input_x, minibatch_features], axis=1)
+
+
+if __name__ == "__main__":
+    import numpy as np
+    data = np.fromfile("/home/FRAC32/RWY/RWY.griddata", dtype=np.float32)
+    data = data.reshape([1, 32, 32, 32, 1])
+    v = tf.Variable(data)
+    v = pbc_pad3d(v, 10, 15)
+
+    with tf.Session() as sess:
+        sess.run(tf.global_variables_initializer())
+        data = sess.run(v)
+
+    data.tofile("test.times")
