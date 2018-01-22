@@ -6,16 +6,15 @@ import numpy as np
 import tensorflow as tf
 
 from ops import *
-from utils import write_visit_input
 
 class Generator:
     """Generate energy grid"""
     def __init__(self, *,
             batch_size,
             z_size,
-            voxel_size=64,
-            bottom_size=4,
-            bottom_filters=256,
+            voxel_size,
+            bottom_size,
+            bottom_filters,
             name="generator",
             reuse=False):
         """
@@ -77,13 +76,13 @@ class Discriminator:
             x,
             batch_size,
             voxel_size,
+            rate,
+            top_size,
+            filter_unit,
+            minibatch,
+            minibatch_kernel_size,
+            minibatch_dim_per_kernel,
             reuse=False,
-            rate=0.5,
-            top_size=4,
-            filter_unit=32,
-            minibatch=False,
-            minibatch_kernel_size=1000,
-            minibatch_dim_per_kernel=4,
             name="discriminator"):
         self.x = x
         self.batch_size = batch_size
@@ -140,24 +139,24 @@ class Discriminator:
 class DCGAN:
     def __init__(self, *,
             dataset,
-            logdir="logdir",
+            logdir,
             batch_size,
             z_size,
             output_writer,
-            save_every=1000,
-            voxel_size=64,
-            bottom_size=4,
-            bottom_filters=256,
-            rate=0.5,
-            top_size=4,
-            filter_unit=32,
-            minibatch=False,
-            minibatch_kernel_size=1000,
-            minibatch_dim_per_kernel=4,
-            l2_loss=False,
-            g_learning_rate=0.0002,
-            d_learning_rate=0.0002,
-            train_gen_per_disc=1):
+            save_every,
+            voxel_size,
+            bottom_size,
+            bottom_filters,
+            rate,
+            top_size,
+            filter_unit,
+            minibatch,
+            minibatch_kernel_size,
+            minibatch_dim_per_kernel,
+            l2_loss,
+            g_learning_rate,
+            d_learning_rate,
+            train_gen_per_disc):
 
         try:
             os.makedirs(logdir)
@@ -357,6 +356,8 @@ class DCGAN:
             idx = 0
             n_iters = math.ceil(n_samples / size)
             for i in range(n_iters):
+                print("... Generating {:02d}%".format((100*i)//n_iters))
+
                 z = np.random.uniform(-1.0, 1.0,
                         size=[size, self.generator.z_size])
 
@@ -375,3 +376,299 @@ class DCGAN:
                     self.output_writer(stem, sample, self.size, sample_dir)
 
                     idx += 1
+
+            print("Done")
+
+
+class Frac2Cell:
+    """Calculate cell parameters (a, b, c) from the fractional energy grid."""
+    def __init__(self, *,
+            dataset,
+            validset,
+            logdir,
+            batch_size,
+            voxel_size,
+            rate,
+            top_size,
+            filter_unit,
+            learning_rate,
+            save_every,
+            reuse=False,
+            name="frac2cell"):
+        """
+        x: (cells, fractional_grids) tuple.
+           Warning: Not a (cell, fractional_grid)s.
+                    Please be aware of the difference.
+
+           cell is normalized.
+        """
+        with tf.variable_scope("build_dataset"):
+            with tf.variable_scope("training"):
+                # Make iterator from the dataset.
+                self.iterator = (
+                    dataset
+                    .batch(batch_size)
+                    .make_initializable_iterator()
+                )
+
+                self.next_data = self.iterator.get_next()
+
+            with tf.variable_scope("validation"):
+                # Make iterator from the dataset.
+                self.valid_iterator = (
+                    validset
+                    .batch(batch_size)
+                    .make_initializable_iterator()
+                )
+
+                self.next_valid_data = self.valid_iterator.get_next()
+
+        self.x = self.next_data
+        self.logdir = logdir
+        self.batch_size = batch_size
+        self.voxel_size = voxel_size
+        self.rate = rate
+        self.top_size = top_size
+        self.filter_unit = filter_unit
+        self.learning_rate = learning_rate
+        self.save_every = save_every
+        self.date = datetime.datetime.now().isoformat()
+
+        # Prepare a folder for save
+        sample_dir = "{}/samples-{}".format(self.logdir, self.date)
+
+        # Make directory
+        try:
+            os.makedirs(sample_dir)
+        except:
+            print("error on os.mkdir?")
+
+        with tf.variable_scope(name, reuse=reuse):
+            self._build()
+
+
+    def _build(self):
+        names = ("conv3d_batchnorm_{}".format(i) for i in range(1000))
+        ms_names = ("match_shape_{}".format(i) for i in range(1000))
+        skip_name = ("skip_{}".format(i) for i in range(1000))
+
+        def import_info(x, info):
+            return x + info
+
+        self.training = tf.placeholder_with_default(
+                            False, shape=(), name="training")
+
+        filters = self.filter_unit
+
+        with tf.variable_scope("bottom"):
+            x = self.x[1]
+            x = tf.layers.dropout(x, rate=self.rate, training=self.training)
+            x = conv3d(x, filters=filters, use_bias=True, strides=1)
+            x = tf.nn.leaky_relu(x)
+
+        # Save for skip connection.
+        first_layer = x
+
+        size = self.voxel_size
+        while self.top_size < size:
+            filters *= 2
+
+            with tf.variable_scope(next(names)):
+                x = conv3d(x, filters=filters)
+                x = batch_normalization(x, training=self.training)
+
+            x = tf.nn.leaky_relu(x)
+
+            _, _, _, size, filters = x.get_shape().as_list()
+
+            with tf.variable_scope(next(skip_name)):
+                # Match shape
+                y = conv3d(first_layer, filters=filters,
+                        strides=self.voxel_size//size)
+                y = batch_normalization(y, training=self.training)
+
+            y = tf.nn.leaky_relu(y)
+
+            x = x + y
+
+            _, _, _, size, filters = x.get_shape().as_list()
+
+        x = tf.layers.flatten(x)
+
+        self.logits = dense(x, units=3, name="logits", use_bias=False)
+        self.outputs = tf.nn.sigmoid(self.logits, name="outputs")
+
+        cell = self.x[0]
+        cell.set_shape([self.batch_size, 3])
+        self.cell = cell
+
+        with tf.variable_scope("loss"):
+            cross_entopry = tf.nn.sigmoid_cross_entropy_with_logits(
+                labels=cell,
+                logits=self.logits,
+                name="cross_entopry",
+            )
+            cross_entopry = tf.reduce_mean(cross_entopry)
+
+            abs_loss = tf.abs(cell - self.outputs)
+            abs_loss = tf.reduce_mean(abs_loss)
+
+            #loss = abs_loss
+            loss = cross_entopry + 10.0*abs_loss
+
+        # Build vars_to_save.
+        trainable_vars = tf.trainable_variables()
+        moving_avg_vars = tf.moving_average_variables()
+        self.vars_to_save = trainable_vars + moving_avg_vars
+
+        with tf.variable_scope("train"):
+            optimizer = tf.train.AdamOptimizer(
+                            learning_rate=self.learning_rate,
+                            beta1=0.5,
+                        )
+
+            self.train_op = optimizer.minimize(loss, var_list=trainable_vars)
+
+        # Build summaries.
+        with tf.name_scope("tensorboard"):
+            tf.summary.scalar("cross_entopry", cross_entopry)
+            tf.summary.scalar("abs_loss", abs_loss)
+
+        with tf.name_scope("histogram_summary"):
+            for v in self.vars_to_save:
+                tf.summary.histogram(v.name, v)
+
+        self.merged_summary = tf.summary.merge_all()
+
+
+    def train(self):
+        # Make log paths.
+        logdir = self.logdir
+
+        date = self.date
+
+        writer_name = "{}/run-{}".format(logdir, date)
+        saver_name = "{}/save-{}".format(logdir, date)
+        sample_dir = "{}/samples-{}".format(logdir, date)
+
+        # Make directory
+        try:
+            os.makedirs(sample_dir)
+        except:
+            print("error on os.mkdir?")
+
+        saver = tf.train.Saver(var_list=self.vars_to_save, max_to_keep=1)
+        file_writer = tf.summary.FileWriter(
+                          writer_name, tf.get_default_graph())
+
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True
+
+        with tf.Session(config=config) as sess:
+            sess.run(tf.global_variables_initializer())
+            sess.run(self.iterator.initializer)
+            sess.run(self.valid_iterator.initializer)
+
+            for i in range(100000000):
+                feed_dict = {
+                    self.training: True,
+                }
+
+                sess.run([self.train_op], feed_dict=feed_dict)
+
+                if i % self.save_every == 0:
+                    # Get validation data.
+                    valid_data = sess.run(self.next_valid_data)
+
+                    ops = [self.merged_summary, self.cell, self.outputs]
+                    feed_dict = {self.x: valid_data}
+
+                    run_options = tf.RunOptions(
+                                      trace_level=tf.RunOptions.FULL_TRACE)
+                    run_metadata = tf.RunMetadata()
+
+
+                    summary_str, cell, cell_infer = sess.run(
+                       ops,
+                       feed_dict=feed_dict,
+                       options=run_options,
+                       run_metadata=run_metadata,
+                    )
+
+                    file_writer.add_run_metadata(
+                        run_metadata, "step_{}".format(i)
+                    )
+
+                    file_writer.add_summary(summary_str, i)
+                    saver.save(sess, saver_name, global_step=i)
+
+                    with open("{}/cell.txt".format(sample_dir), "w") as f:
+                        for c, ci in zip(cell, cell_infer):
+                            f.write("{:.3f} {:.3f}, {:.3f} {:.3f}, {:.3f} {:.3f}\n".format(
+                                    c[0], ci[0],
+                                    c[1], ci[1],
+                                    c[2], ci[2],
+                                )
+                            )
+
+                print("{}/{}  ITER: {}".format(logdir, date, i))
+
+
+    def inference(self, griddata_folder, ckpt):
+        sample_dir = "{}/samples-{}".format(self.logdir, self.date)
+
+        # Remove useless folder.
+        try:
+            shutil.rmtree(sample_dir)
+        except:
+            print("error on os.mkdir?")
+
+        files = glob.glob("{}/*.griddata".format(griddata_folder))
+
+        saver = tf.train.Saver(var_list=self.vars_to_save, max_to_keep=1)
+
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True
+
+        with tf.Session(config=config) as sess:
+            print("Restoring checkpoint: {}".format(ckpt))
+            saver.restore(sess, ckpt)
+
+            print("Inference step starts.")
+            for i, gridfile in enumerate(files):
+                # =====================================================
+                # WARNING: Manually normalize. should be checked later.
+                # =====================================================
+                grid = np.fromfile(gridfile, dtype=np.float32)
+                grid = grid.reshape([1, 32, 32, 32, 1])
+                # Normalize.
+                maxe = 5000.0
+                mine = -3000.0
+
+                grid[grid > maxe] = maxe
+                grid[grid < mine] = mine
+
+                grid = (grid - mine) / (maxe - mine)
+                grid = 1.0 - grid
+
+                grid = grid.astype(np.float32)
+
+                feed_dict = {
+                    self.x[1]: grid,
+                }
+
+                outputs = sess.run(self.outputs, feed_dict=feed_dict)
+
+                output = 60.0 * outputs[0, ...]
+
+                outfile = ".".join(gridfile.split(".")[:-1]) + ".grid"
+
+                with open(outfile, "w") as f:
+                    f.write("CELL_PARAMETERS {:.3f} {:.3f} {:.3f}\n".format(
+                        output[0], output[1], output[2]))
+
+                    f.write("CELL_ANGLES 90 90 90\n")
+                    f.write("GRID_NUMBERS 32 32 32\n")
+
+                print(output)
+                print("ITER: {}".format(i))
