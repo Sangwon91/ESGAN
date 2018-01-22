@@ -34,6 +34,7 @@ def make_arg_parser():
     parser.add_argument("--z_size", type=int)
     parser.add_argument("--voxel_size", type=int)
     parser.add_argument("--rate", type=float)
+    parser.add_argument("--move", type=str2bool)
     parser.add_argument("--rotate", type=str2bool)
     parser.add_argument("--invert", type=str2bool)
     parser.add_argument("--energy_limit", type=float, nargs=2)
