@@ -23,6 +23,7 @@ def main():
     dataset = make_energy_grid_dataset(
         path=args.dataset_path,
         extension=args.extension,
+        move=args.move,
         rotate=args.rotate,
         shape=args.voxel_size,
         prefetch_size=300,
