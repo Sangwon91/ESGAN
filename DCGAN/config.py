@@ -66,6 +66,32 @@ def write_config_log(args, date):
             f.write("{} {}\n".format(key, val))
 
 
+def make_args_from_config(config):
+    """Convert config file to args that can be used for argparser."""
+    # Get file name (not a path)
+    #config_name = config.split("/")[-1]
+    # Get parent path
+    #config_folder = "/".join(config.split("/")[:-1])
+
+    args = list()
+    with open(config, "r") as f:
+        for line in f:
+            # Remove trash chars
+            line = line.replace("[", "")
+            line = line.replace(",", "")
+            line = line.replace("]", "")
+
+            line = "--" + line
+
+            args += line.split()
+
+    #args += ["--logdir", config_folder]
+
+    #print(args)
+
+    return args
+
+
 def _test():
     parser = make_arg_parser()
     args = parser.parse_args(sys.argv[1:])
