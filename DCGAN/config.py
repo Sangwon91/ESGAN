@@ -62,6 +62,7 @@ def make_frac2cell_arg_parser():
     parser = ArgumentParser(fromfile_prefix_chars='@')
 
     parser.add_argument("--dataset_path", type=str)
+    parser.add_argument("--validset_path", type=str)
     parser.add_argument("--extension", type=str)
     parser.add_argument("--voxel_size", type=int)
     parser.add_argument("--rate", type=float)
