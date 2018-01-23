@@ -509,7 +509,8 @@ class Frac2Cell:
             abs_loss = tf.abs(cell - self.outputs)
             abs_loss = tf.reduce_mean(abs_loss)
 
-            loss = cross_entopry + self.scale_factor*abs_loss
+            s = self.scale_factor
+            loss = s*cross_entopry + (1.0-s)*abs_loss
 
         # Build vars_to_save.
         trainable_vars = tf.trainable_variables()
