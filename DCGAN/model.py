@@ -436,15 +436,6 @@ class Frac2Cell:
         self.scale_factor = scale_factor
         self.date = datetime.datetime.now().isoformat()
 
-        # Prepare a folder for save
-        sample_dir = "{}/samples-{}".format(self.logdir, self.date)
-
-        # Make directory
-        try:
-            os.makedirs(sample_dir)
-        except:
-            print("error on os.mkdir?")
-
         with tf.variable_scope(name, reuse=reuse):
             self._build()
 
