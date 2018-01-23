@@ -393,6 +393,7 @@ class Frac2Cell:
             filter_unit,
             learning_rate,
             save_every,
+            scale_factor,
             reuse=False,
             name="frac2cell"):
         """
@@ -432,6 +433,7 @@ class Frac2Cell:
         self.filter_unit = filter_unit
         self.learning_rate = learning_rate
         self.save_every = save_every
+        self.scale_factor = scale_factor
         self.date = datetime.datetime.now().isoformat()
 
         # Prepare a folder for save
@@ -513,8 +515,7 @@ class Frac2Cell:
             abs_loss = tf.abs(cell - self.outputs)
             abs_loss = tf.reduce_mean(abs_loss)
 
-            #loss = abs_loss
-            loss = cross_entopry + 10.0*abs_loss
+            loss = cross_entopry + self.scale_factor*abs_loss
 
         # Build vars_to_save.
         trainable_vars = tf.trainable_variables()
