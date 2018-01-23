@@ -376,6 +376,9 @@ class DCGAN:
                     name = "{}/ann_{}.griddata".format(sample_dir, idx)
                     #self.output_writer(stem, sample, self.size,
                     #    save_dir=sample_dir)
+                    sample = 1.0 - sample
+                    sample = (5000.0 - (-3000.0))*sample + (-3000.0)
+                    sample = sample.astype(np.float32)
                     sample.tofile(name)
 
                     idx += 1
