@@ -49,6 +49,7 @@ def write_griday_input(
         invert,
         energy_scale,
         cell_length_scale,
+        except_grid=False,
         save_dir="."):
         #cell_angle_scale=[0.0, 180.0],
 
@@ -79,16 +80,17 @@ def write_griday_input(
     grid = save_dir + "/" + stem + ".grid"
     griddata = grid + "data"
 
-    # Write header file
-    with open(grid, "w") as gridfile:
-        gridfile.write(textwrap.dedent("""\
-            CELL_PARAMETERS {} {} {}
-            CELL_ANGLES {} {} {}
-            GRID_NUMBERS {size} {size} {size}""".format(
-                cell[0], cell[1], cell[2],
-                90, 90, 90,
-                #cell[3], cell[4], cell[5],
-                size=size))
-            )
+    if not except_grid:
+        # Write header file
+        with open(grid, "w") as gridfile:
+            gridfile.write(textwrap.dedent("""\
+                CELL_PARAMETERS {} {} {}
+                CELL_ANGLES {} {} {}
+                GRID_NUMBERS {size} {size} {size}""".format(
+                    cell[0], cell[1], cell[2],
+                    90, 90, 90,
+                    #cell[3], cell[4], cell[5],
+                    size=size))
+                )
 
     data.tofile(griddata)
