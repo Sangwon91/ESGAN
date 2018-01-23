@@ -372,8 +372,10 @@ class DCGAN:
 
                 # Generate energy grid samples
                 for sample in samples:
-                    stem = "ann_{}".format(idx)
-                    self.output_writer(stem, sample, self.size, sample_dir)
+                    name = "{}/ann_{}.griddata".format(sample_dir, idx)
+                    #self.output_writer(stem, sample, self.size,
+                    #    save_dir=sample_dir)
+                    sample.tofile(name)
 
                     idx += 1
 
