@@ -156,6 +156,24 @@ def minibatch_discrimination(x, num_kernels, dim_per_kernel, name="minibatch"):
         return tf.concat([input_x, minibatch_features], axis=1)
 
 
+def match_shape_with_dense(x, target, name="match_shape"):
+    # Get shape and replace None to -1.
+    shape = [i if i else -1 for i in target.get_shape().as_list()]
+
+    flat_size = 1
+    for s in shape[1:]:
+        flat_size *= s
+
+    with tf.variable_scope(name):
+        x = tf.layers.flatten(x)
+        x = dense(x, units=flat_size, use_bias=True)
+
+        # Same size as input
+        x = tf.reshape(x, shape=shape)
+
+    return x
+
+
 if __name__ == "__main__":
     import numpy as np
     data = np.fromfile("/home/FRAC32/RWY/RWY.griddata", dtype=np.float32)
