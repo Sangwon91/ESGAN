@@ -35,9 +35,21 @@ conv3d = functools.partial(
 
 def pbc_pad3d(x, lp, rp, name="PBC"):
     with tf.variable_scope(name):
-        x = tf.concat([x[:, -lp:, :, :, :], x, x[:, :rp, :, :, :]], axis=1)
-        x = tf.concat([x[:, :, -lp:, :, :], x, x[:, :, :rp, :, :]], axis=2)
-        x = tf.concat([x[:, :, :, -lp:, :], x, x[:, :, :, :rp, :]], axis=3)
+        if lp == 0 and rp == 0:
+            x = tf.identity(x)
+        elif lp == 0 and rp != 0:
+            x = tf.concat([x, x[:, :rp, :, :, :]], axis=1)
+            x = tf.concat([x, x[:, :, :rp, :, :]], axis=2)
+            x = tf.concat([x, x[:, :, :, :rp, :]], axis=3)
+        elif lp != 0 and rp != 0:
+            x = tf.concat(
+                [x[:, -lp:, :, :, :], x, x[:, :rp, :, :, :]], axis=1)
+            x = tf.concat(
+                [x[:, :, -lp:, :, :], x, x[:, :, :rp, :, :]], axis=2)
+            x = tf.concat(
+                [x[:, :, :, -lp:, :], x, x[:, :, :, :rp, :]], axis=3)
+        else:
+            raise Exception("lp != 0 and rp == 0")
 
     return x
 
@@ -50,10 +62,12 @@ def pbc_conv3d(x, pbc=True, **kwargs):
 
         # i = input size.
         i = x.get_shape().as_list()[1]
-        # o = output size.
-        o = math.ceil(float(i) / float(s))
-        # Total padding size.
-        p = (o-1)*s + k - i
+
+        if i % s == 0:
+            p = max(k-s, 0)
+        else:
+            p = max(k - (i%s), 0)
+
         # calc left padding = lp and right padding = rp
         lp = p // 2
         rp = p - lp
