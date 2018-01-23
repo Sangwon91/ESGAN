@@ -112,7 +112,6 @@ def main():
         learning_rate=args.learning_rate,
         save_every=args.save_every,
         scale_factor=args.scale_factor,
-        name="discriminator",
     )
 
     ckpt = prepare_sample_generation(gen_args.config, gen_args.griddata_folder)
