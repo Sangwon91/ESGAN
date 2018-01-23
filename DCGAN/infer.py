@@ -36,8 +36,9 @@ def prepare_sample_generation(config, griddata_folder):
     ckpts = glob.glob(expression)
 
     try:
-        print(">>>>>> Copying ckeckpoint...")
+        print(">>>>>> Copying ckeckpoints...")
         for f in ckpts:
+            print("Copying", f, "...")
             shutil.copy2(f, griddata_folder)
     except Exception as e:
         raise Exception(str(e) + ", Terminate program")
@@ -111,6 +112,7 @@ def main():
         learning_rate=args.learning_rate,
         save_every=args.save_every,
         scale_factor=args.scale_factor,
+        name="discriminator",
     )
 
     ckpt = prepare_sample_generation(gen_args.config, gen_args.griddata_folder)
