@@ -1,3 +1,4 @@
+import os
 import sys
 import argparse
 
@@ -86,6 +87,12 @@ def make_frac2cell_arg_parser():
 
 def write_config_log(args, date):
     logdir = args.logdir
+
+    # Try to make parent folder.
+    try:
+        os.makedirs(logdir)
+    except Exception as e:
+        print("Error:", e, "but keep going.")
 
     items = sorted(list(args.__dict__.items()))
     with open("{}/config-{}".format(logdir, date), "w") as f:
