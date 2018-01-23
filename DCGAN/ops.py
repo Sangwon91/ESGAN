@@ -193,7 +193,7 @@ if __name__ == "__main__":
     data = np.fromfile("/home/FRAC32/RWY/RWY.griddata", dtype=np.float32)
     data = data.reshape([1, 32, 32, 32, 1])
     v = tf.Variable(data)
-    v = pbc_pad3d(v, 10, 15)
+    v = pbc_pad3d(v, 22, 15)
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
