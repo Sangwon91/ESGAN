@@ -18,7 +18,9 @@ def main():
     energy_scale = args.energy_scale
 
     output_writer = functools.partial(
-        write_visit_input, energy_scale=energy_scale)
+        write_visit_input,
+        energy_scale=energy_scale,
+        invert=args.invert)
 
     dataset = make_energy_grid_dataset(
         path=args.dataset_path,

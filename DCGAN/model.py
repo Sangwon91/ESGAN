@@ -336,7 +336,11 @@ class DCGAN:
                     # Generate energy grid samples
                     for j, sample in enumerate(samples):
                         stem = "sample_{}".format(j)
-                        self.output_writer(stem, sample, self.size, sample_dir)
+                        self.output_writer(
+                            stem=stem,
+                            grid=sample,
+                            size=self.size,
+                            save_dir=sample_dir)
 
                 print("{}/{}  ITER: {}".format(logdir, date, i))
 
