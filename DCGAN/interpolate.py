@@ -105,7 +105,7 @@ def main():
         logdir=args.logdir,
         output_writer=None,
         save_every=args.save_every,
-        batch_size=10,
+        batch_size=32,
         z_size=args.z_size,
         voxel_size=args.voxel_size,
         bottom_size=args.bottom_size,
