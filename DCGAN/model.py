@@ -390,6 +390,58 @@ class DCGAN:
             print("Done")
 
 
+    def interpolate_samples(self, sample_dir, checkpoint, n_samples):
+        saver = tf.train.Saver(var_list=self.vars_to_save, max_to_keep=1)
+
+        with tf.Session() as sess:
+            saver.restore(sess, checkpoint)
+
+            try:
+                os.makedirs(sample_dir)
+            except Exception as e:
+                print(e)
+
+            size = self.batch_size
+            z_size = self.generator.z_size
+
+            idx = 0
+            n_iters = n_samples
+
+            interval = np.linspace(0, 1, size)
+            z0 = np.random.uniform(-1.0, 1.0, size=[z_size])
+
+            for i in range(n_iters):
+                print("... Generating {:02d}%".format((100*i)//n_iters))
+
+                z1 = np.random.uniform(-1.0, 1.0, size=[z_size])
+                z = np.array([(1-t)*z0 + t*z1 for t in interval])
+
+                feed_dict = {
+                    self.generator.z: z,
+                }
+
+                samples = sess.run(
+                    self.generator.outputs,
+                    feed_dict=feed_dict,
+                )
+
+                # Generate energy grid samples
+                for sample in samples:
+                    name = "{}/ann_{}.griddata".format(sample_dir, idx)
+                    #self.output_writer(stem, sample, self.size,
+                    #    save_dir=sample_dir)
+                    sample = 1.0 - sample
+                    sample = (5000.0 - (-3000.0))*sample + (-3000.0)
+                    sample = sample.astype(np.float32)
+                    sample.tofile(name)
+
+                    idx += 1
+
+                z0 = z1
+
+            print("Done")
+
+
 class Frac2Cell:
     """Calculate cell parameters (a, b, c) from the fractional energy grid."""
     def __init__(self, *,
