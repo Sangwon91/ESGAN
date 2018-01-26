@@ -17,7 +17,8 @@ class Generator:
             bottom_size,
             bottom_filters,
             name="generator",
-            reuse=False):
+            reuse=False,
+            z=None):
         """
         Args:
             filter_unit: unit of minimal filter. n'th layer has the filter size
@@ -28,6 +29,7 @@ class Generator:
         self.voxel_size = voxel_size
         self.bottom_size = bottom_size
         self.bottom_filters = bottom_filters
+        self.z = z
 
         with tf.variable_scope(name, reuse=reuse):
             self._build()
@@ -39,8 +41,10 @@ class Generator:
         self.training = tf.placeholder_with_default(
                             False, shape=(), name="training")
 
-        self.z = tf.placeholder(
-            shape=[self.batch_size, self.z_size], dtype=tf.float32)
+        # Create z if not feeded.
+        if self.z is None:
+            self.z = tf.placeholder(
+                shape=[self.batch_size, self.z_size], dtype=tf.float32)
 
         filters = self.bottom_filters
 
