@@ -67,9 +67,13 @@ class Generator:
 
             _, _, _, size, filters = x.get_shape().as_list()
 
-        x = conv3d_transpose(
-                x, filters=1, strides=1, use_bias=True,
-                activation=tf.nn.sigmoid, name="outputs"
+        x = conv3d_transpose(x,
+                filters=1,
+                strides=1,
+                use_bias=True,
+                bias_initializer=tf.constant_initializer(0.5),
+                activation=tf.nn.sigmoid,
+                name="outputs",
             )
 
         self.outputs = x
@@ -137,7 +141,11 @@ class Discriminator:
                     dim_per_kernel=self.minibatch_dim_per_kernel,
                 )
 
-        self.logits = dense(x, units=1, name="logits", use_bias=True)
+        self.logits = dense(x,
+                          units=1,
+                          use_bias=True,
+                          name="logits",
+                      )
         self.outputs = tf.nn.sigmoid(self.logits, name="outputs")
 
 
