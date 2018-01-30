@@ -4,7 +4,7 @@ import functools
 import numpy as np
 import tensorflow as tf
 
-from model import DCGAN
+from model import WGANGP
 from config import make_arg_parser, write_config_log
 from dataset import make_energy_grid_dataset
 
@@ -35,7 +35,7 @@ def main():
         invert=args.invert,
     )
 
-    dcgan = DCGAN(
+    wgan_gp = WGANGP(
         dataset=dataset,
         logdir=args.logdir,
         output_writer=output_writer,
@@ -54,12 +54,13 @@ def main():
         minibatch_kernel_size=args.minibatch_kernel_size,
         minibatch_dim_per_kernel=args.minibatch_dim_per_kernel,
         l2_loss=args.l2_loss,
-        train_gen_per_disc=args.train_gen_per_disc,
+        n_critics=args.n_critics,
+        gp_lambda=args.gp_lambda,
     )
 
-    write_config_log(args, dcgan.date)
+    write_config_log(args, wgan_gp.date)
 
-    dcgan.train()
+    wgan_gp.train()
 
 
 if __name__ == "__main__":

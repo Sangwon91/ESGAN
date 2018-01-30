@@ -53,33 +53,8 @@ def make_arg_parser():
     parser.add_argument("--minibatch_kernel_size", type=int)
     parser.add_argument("--minibatch_dim_per_kernel", type=int)
     parser.add_argument("--l2_loss", type=str2bool)
-    parser.add_argument("--train_gen_per_disc", type=int)
-    parser.add_argument("--device", type=str)
-
-    return parser
-
-
-def make_frac2cell_arg_parser():
-    parser = ArgumentParser(fromfile_prefix_chars='@')
-
-    parser.add_argument("--dataset_path", type=str)
-    parser.add_argument("--validset_path", type=str)
-    parser.add_argument("--extension", type=str)
-    parser.add_argument("--voxel_size", type=int)
-    parser.add_argument("--rate", type=float)
-    parser.add_argument("--rotate", type=str2bool)
-    parser.add_argument("--move", type=str2bool)
-    parser.add_argument("--invert", type=str2bool)
-    parser.add_argument("--energy_limit", type=float, nargs=2)
-    parser.add_argument("--energy_scale", type=float, nargs=2)
-    parser.add_argument("--cell_length_scale", type=float, nargs=2)
-    parser.add_argument("--logdir", type=str)
-    parser.add_argument("--save_every", type=int)
-    parser.add_argument("--batch_size", type=int)
-    parser.add_argument("--top_size", type=int)
-    parser.add_argument("--filter_unit", type=int)
-    parser.add_argument("--learning_rate", type=float)
-    parser.add_argument("--scale_factor", type=float)
+    parser.add_argument("--n_critics", type=int)
+    parser.add_argument("--gp_lambda", type=float)
     parser.add_argument("--device", type=str)
 
     return parser
