@@ -67,14 +67,15 @@ class Generator:
 
             _, _, _, size, filters = x.get_shape().as_list()
 
-        x = conv3d_transpose(x,
-                filters=1,
-                strides=1,
-                use_bias=True,
-                bias_initializer=tf.constant_initializer(0.5),
-                activation=tf.nn.sigmoid,
-                name="outputs",
-            )
+        with tf.variable_scope("outputs"):
+            x = conv3d_transpose(x,
+                    filters=1,
+                    strides=1,
+                    use_bias=True,
+                    bias_initializer=tf.constant_initializer(0.5),
+                    activation=tf.nn.sigmoid,
+                    #name="outputs",
+                )
 
         self.outputs = x
 
@@ -143,7 +144,7 @@ class Discriminator:
 
         self.logits = dense(x,
                           units=1,
-                          use_bias=True,
+                          #use_bias=True,
                           name="logits",
                       )
         self.outputs = tf.nn.sigmoid(self.logits, name="outputs")
@@ -278,7 +279,7 @@ class DCGAN:
         self.merged_summary = tf.summary.merge_all()
 
 
-    def train(self):
+    def train(self, checkpoint):
         # Make log paths.
         logdir = self.logdir
 
@@ -304,6 +305,10 @@ class DCGAN:
         with tf.Session(config=config) as sess:
             sess.run(tf.global_variables_initializer())
             sess.run(self.iterator.initializer)
+
+            if checkpoint:
+                print("Restoring:", checkpoint)
+                saver.restore(sess, checkpoint)
 
             for i in range(100000000):
                 z = np.random.uniform(-1.0, 1.0,
@@ -373,7 +378,7 @@ class DCGAN:
             idx = 0
             n_iters = math.ceil(n_samples / size)
             for i in range(n_iters):
-                print("... Generating {:02d}%".format((100*i)//n_iters))
+                print("... Generating {:d}".format(idx))
 
                 z = np.random.uniform(-1.0, 1.0,
                         size=[size, self.generator.z_size])
@@ -393,7 +398,7 @@ class DCGAN:
                     #self.output_writer(stem, sample, self.size,
                     #    save_dir=sample_dir)
                     sample = 1.0 - sample
-                    sample = (5000.0 - (-3000.0))*sample + (-3000.0)
+                    sample = (5000.0 - (-4000.0))*sample + (-4000.0)
                     sample = sample.astype(np.float32)
                     sample.tofile(name)
 
@@ -423,7 +428,7 @@ class DCGAN:
             z0 = np.random.uniform(-1.0, 1.0, size=[z_size])
 
             for i in range(n_iters):
-                print("... Generating {:02d}%".format((100*i)//n_iters))
+                print("... Generating {:d}".format(idx))
 
                 z1 = np.random.uniform(-1.0, 1.0, size=[z_size])
                 z = np.array([(1-t)*z0 + t*z1 for t in interval])
@@ -443,7 +448,7 @@ class DCGAN:
                     #self.output_writer(stem, sample, self.size,
                     #    save_dir=sample_dir)
                     sample = 1.0 - sample
-                    sample = (5000.0 - (-3000.0))*sample + (-3000.0)
+                    sample = (5000.0 - (-4000.0))*sample + (-4000.0)
                     sample = sample.astype(np.float32)
                     sample.tofile(name)
 
@@ -710,7 +715,7 @@ class Frac2Cell:
                 grid = grid.reshape([1, 32, 32, 32, 1])
                 # Normalize.
                 maxe = 5000.0
-                mine = -3000.0
+                mine = -4000.0
 
                 grid[grid > maxe] = maxe
                 grid[grid < mine] = mine

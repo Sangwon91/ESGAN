@@ -13,6 +13,7 @@ from config import (ArgumentParser,
                     write_config_log,
                     make_args_from_config)
 from dataset import make_energy_grid_dataset
+from utils import write_visit_input
 
 def prepare_sample_generation(config):
     """
@@ -61,7 +62,6 @@ def main():
     # Custom argparser.
     gen_parser = ArgumentParser()
     gen_parser.add_argument("--config", type=str)
-    gen_parser.add_argument("--n_samples", type=str)
     gen_parser.add_argument("--device", type=str)
 
     # Parse args for gen.py
@@ -76,15 +76,11 @@ def main():
 
     energy_scale = args.energy_scale
 
-    """
     output_writer = functools.partial(
-        write_griday_input,
-        invert=args.invert,
+        write_visit_input,
         energy_scale=energy_scale,
-        cell_length_scale=[0.0, 1.0], # Dummy values.
-        except_grid=True,
+        invert=args.invert
     )
-    """
 
     # Will not used. but needed in constructor of DCGAN.
     dataset = make_energy_grid_dataset(
@@ -103,9 +99,9 @@ def main():
     dcgan = DCGAN(
         dataset=dataset,
         logdir=args.logdir,
-        output_writer=None,
+        output_writer=output_writer,
         save_every=args.save_every,
-        batch_size=25,
+        batch_size=args.batch_size,
         z_size=args.z_size,
         voxel_size=args.voxel_size,
         bottom_size=args.bottom_size,
@@ -124,7 +120,7 @@ def main():
 
     ann_folder, ckpt = prepare_sample_generation(gen_args.config)
 
-    dcgan.generate_samples(ann_folder, ckpt, int(gen_args.n_samples))
+    dcgan.train(ckpt)
 
 
 if __name__ == "__main__":
