@@ -43,8 +43,13 @@ class Generator:
 
         # Create z if not feeded.
         if self.z is None:
-            self.z = tf.placeholder(
-                shape=[self.batch_size, self.z_size], dtype=tf.float32)
+            self.z = tf.random_normal(
+                         shape=[self.batch_size, self.z_size],
+                         mean=0.0,
+                         stddev=1.0,
+                         dtype=tf.float32,
+                         name="z",
+                     )
 
         filters = self.bottom_filters
 
@@ -279,7 +284,7 @@ class DCGAN:
         self.merged_summary = tf.summary.merge_all()
 
 
-    def train(self, checkpoint):
+    def train(self, checkpoint=None):
         # Make log paths.
         logdir = self.logdir
 
@@ -311,12 +316,8 @@ class DCGAN:
                 saver.restore(sess, checkpoint)
 
             for i in range(100000000):
-                z = np.random.uniform(-1.0, 1.0,
-                        size=[self.batch_size, self.generator.z_size])
-
                 # Train discriminator.
                 feed_dict = {
-                    self.generator.z: z,
                     self.generator.training: True,
                     self.discriminator_real.training: True,
                     self.discriminator_fake.training: True,
@@ -328,9 +329,7 @@ class DCGAN:
                     sess.run([self.g_train_op], feed_dict=feed_dict)
 
                 if i % self.save_every == 0:
-                    feed_dict = {
-                        self.generator.z: z,
-                    }
+                    feed_dict = {}
 
                     run_options = tf.RunOptions(
                                       trace_level=tf.RunOptions.FULL_TRACE)
@@ -380,12 +379,7 @@ class DCGAN:
             for i in range(n_iters):
                 print("... Generating {:d}".format(idx))
 
-                z = np.random.uniform(-1.0, 1.0,
-                        size=[size, self.generator.z_size])
-
-                feed_dict = {
-                    self.generator.z: z,
-                }
+                feed_dict = {}
 
                 samples = sess.run(
                     self.generator.outputs,
@@ -424,14 +418,17 @@ class DCGAN:
             idx = 0
             n_iters = n_samples
 
-            interval = np.linspace(0, 1, size)
-            z0 = np.random.uniform(-1.0, 1.0, size=[z_size])
+            lams = np.linspace(0, 1, size)
+            sig = lambda l: math.sqrt(l**2 + (1-l)**2)
 
+            z0 = np.random.uniform(-1.0, 1.0, size=[z_size])
             for i in range(n_iters):
                 print("... Generating {:d}".format(idx))
 
                 z1 = np.random.uniform(-1.0, 1.0, size=[z_size])
-                z = np.array([(1-t)*z0 + t*z1 for t in interval])
+                z = np.array(
+                    [((1-l)*z0 + l*z1) / sig(l) for l in lams]
+                )
 
                 feed_dict = {
                     self.generator.z: z,
