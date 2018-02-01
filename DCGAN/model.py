@@ -77,7 +77,7 @@ class Generator:
                     filters=1,
                     strides=1,
                     use_bias=True,
-                    bias_initializer=tf.constant_initializer(0.5),
+                    bias_initializer=tf.constant_initializer(0.0),
                     activation=tf.nn.sigmoid,
                     #name="outputs",
                 )
@@ -418,8 +418,7 @@ class DCGAN:
             idx = 0
             n_iters = n_samples
 
-            lams = np.linspace(0, 1, size)
-            sig = lambda l: math.sqrt(l**2 + (1-l)**2)
+            thetas = np.linspace(0, 0.5*np.pi, size)
 
             z0 = np.random.uniform(-1.0, 1.0, size=[z_size])
             for i in range(n_iters):
@@ -427,7 +426,7 @@ class DCGAN:
 
                 z1 = np.random.uniform(-1.0, 1.0, size=[z_size])
                 z = np.array(
-                    [((1-l)*z0 + l*z1) / sig(l) for l in lams]
+                    [(math.cos(t)*z0 + math.sin(t)*z1) for t in thetas]
                 )
 
                 feed_dict = {
