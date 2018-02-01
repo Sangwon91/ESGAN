@@ -127,12 +127,6 @@ def make_egrid_tuple_dataset(
         cell_lengths = [
             (x - cmin) / (cmax - cmin) for x in data["CELL_PARAMETERS"]]
 
-        #amin = cell_angle_scale[0]
-        #amax = cell_angle_scale[1]
-        #cell_angles = [
-        #    (x - amin) / (amax - amin) for x in data["CELL_ANGLES"]]
-
-        #return np.array(cell_lengths + cell_angles, dtype=np.float32)
         return np.array(cell_lengths, dtype=np.float32)
 
     def _parse_grid(x):
@@ -169,22 +163,9 @@ def make_egrid_tuple_dataset(
                 [1], minval=0, maxval=shape[0], dtype=tf.int32)[0]
             x = tf.concat([x[:, :, n:, :], x[:, :, :n, :]], axis=2)
 
-        if rotate:
-            pos = tf.constant([
-                [0, 1, 2, 3],
-                [2, 0, 1, 3],
-                [1, 2, 0, 3]
-            ], dtype=tf.int32)
-
-            n = tf.random_uniform(
-                [1], minval=0, maxval=3, dtype=tf.int32)[0]
-
-            pos = pos[n]
-
-            # Rotation.
-            x = tf.transpose(x, pos)
 
         x.set_shape(shape)
+
         return x
 
     grid_set = grid_set.map(
@@ -193,7 +174,64 @@ def make_egrid_tuple_dataset(
 
     data_set = data_set.map(_parse_grid)
 
+    def _rotate_helper(grid, data):
+        nn = tf.random_uniform(
+             [1], minval=0, maxval=3, dtype=tf.int32)[0]
+
+        pos1 = tf.constant([
+                  [0, 1, 2, 3], # z-->z, y-->y, x-->x
+                  [2, 0, 1, 3], # z-->x, y-->z, x-->y
+                  [1, 2, 0, 3]  # z-->y, y-->x, x-->z
+              ], dtype=tf.int32)
+
+        pos1 = pos1[nn]
+
+        pos2 = tf.constant([
+                  [0, 1, 2], # x-->x, y-->y, z-->z
+                  [1, 2, 0], # x-->y, y-->z, z-->x
+                  [2, 0, 1]  # x-->z, y-->x, z-->y
+              ], dtype=tf.int32)
+
+        pos2 = pos2[nn]
+
+        i = pos2[0]
+        j = pos2[1]
+        k = pos2[2]
+
+        # Because the energy grid contains data as z, y, x order
+        # (e.g., energy at x, y, z is data[z, y, x])
+        #
+        # So if the value of pos is [1, 2, 0] then the transposed energy grid
+        # is data[y, x, z].
+        # It means z axis becomes y, y axis becomes x, and the x axis becomes z
+        # start --> end
+        #     z --> y
+        #     y --> x
+        #     x --> z
+        #
+        # On the other hand, the cell lengths are stored as x, y, z order.
+        # So if you transpose cell with the pos = [1, 2, 0], you get
+        # cell[y, z, x].
+        # start --> end
+        #     x --> y
+        #     y --> z
+        #     z --> x
+        # So you should use defferent pos, pos2
+
+        grid = tf.stack([
+                    grid[i],
+                    grid[j],
+                    grid[k]
+               ])
+
+        data = tf.transpose(data, pos1)
+
+        return (grid, data)
+
     dataset = tf.data.Dataset.zip((grid_set, data_set))
+
+    if rotate:
+        dataset = dataset.map(_rotate_helper)
 
     if shuffle_size:
         dataset = dataset.shuffle(shuffle_size)
@@ -203,5 +241,41 @@ def make_egrid_tuple_dataset(
 
     return dataset
 
+
 if __name__ == "__main__":
-    pass
+    from utils import write_griday_input
+
+    dataset = make_egrid_tuple_dataset(
+        path=".",
+        shape=32,
+        invert=True,
+        move=True,
+        rotate=True,
+        energy_limit=[-4000.0, 5000.0],
+        energy_scale=[-4000.0, 5000.0],
+        cell_length_scale=[0.0, 50.0],
+        shuffle_size=None,
+        prefetch_size=None,
+        shared_name=None,
+    )
+
+    iterator = dataset.batch(32).make_initializable_iterator()
+
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+
+    with tf.Session(config=config) as sess:
+        sess.run(iterator.initializer)
+        cells, grids = sess.run(iterator.get_next())
+
+        for i, (cell, grid) in enumerate(zip(cells, grids)):
+            stem = "test_{:02d}".format(i)
+            write_griday_input(
+                stem=stem,
+                grid_tuple=(cell, grid),
+                size=32,
+                invert=True,
+                energy_scale=[-4000.0, 5000.0],
+                cell_length_scale=[0.0, 50.0],
+                save_dir="test"
+            )
