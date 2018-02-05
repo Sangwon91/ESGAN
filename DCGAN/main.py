@@ -1,11 +1,12 @@
 import os
+import tempfile
 import functools
 
 import numpy as np
 import tensorflow as tf
 
 from model import DCGAN
-from config import make_arg_parser, write_config_log
+from config import make_arg_parser, write_config_log, cache_ckpt_from_config
 from dataset import make_energy_grid_dataset
 
 from utils import write_visit_input
@@ -60,7 +61,16 @@ def main():
 
     write_config_log(args, dcgan.date)
 
-    dcgan.train()
+    with tempfile.TemporaryDirectory() as temp_dir:
+        if args.restore_config:
+            ckpt = cache_ckpt_from_config(
+                       config=args.restore_config,
+                       cache_folder=temp_dir,
+                   )
+        else:
+            ckpt = None
+
+        dcgan.train(ckpt)
 
 
 if __name__ == "__main__":
