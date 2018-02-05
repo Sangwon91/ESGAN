@@ -120,6 +120,8 @@ def main():
 
     ann_folder, ckpt = prepare_sample_generation(gen_args.config)
 
+    write_config_log(args, dcgan.date)
+
     dcgan.train(ckpt)
 
 
