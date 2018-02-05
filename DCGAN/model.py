@@ -335,7 +335,7 @@ class DCGAN:
         except:
             print("error on os.mkdir?")
 
-        saver = tf.train.Saver(var_list=self.vars_to_save, max_to_keep=1)
+        saver = tf.train.Saver(var_list=self.vars_to_save, max_to_keep=2)
         file_writer = tf.summary.FileWriter(
                           writer_name, tf.get_default_graph())
 
