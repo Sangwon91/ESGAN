@@ -119,10 +119,6 @@ def make_args_from_config(config):
 
             args += line.split()
 
-    #args += ["--logdir", config_folder]
-
-    #print(args)
-
     return args
 
 
