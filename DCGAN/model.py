@@ -253,18 +253,52 @@ class DCGAN:
                 sigmoid_log_with_logits(fake_logits)
             )
 
+        with tf.variable_scope("loss/feature_matching"):
+            # Warning. It's hard-corded.
+            upper = 5000.0
+            lower = -4000.0
+
+            real_x = self.discriminator_real.x
+            real_x = 1.0 - real_x
+            real_x = (upper - lower)*real_x + lower
+
+            fake_x = self.discriminator_fake.x
+            fake_x = 1.0 - fake_x
+            fake_x = (upper - lower)*fake_x + lower
+
+            temper = 300.0
+
+            # Chemical potentials.
+            real_boltz = tf.exp(-real_x / temper)
+            real_boltz = tf.reduce_mean(real_boltz, axis=[1, 2, 3, 4])
+            real_boltz = tf.log(real_boltz)
+            real_avg_cp = tf.reduce_mean(real_boltz)
+
+            fake_boltz = tf.exp(-fake_x / temper)
+            fake_boltz = tf.reduce_mean(fake_boltz, axis=[1, 2, 3, 4])
+            fake_boltz = tf.log(fake_boltz)
+            fake_avg_cp = tf.reduce_mean(fake_boltz)
+
+            fm_loss = (real_avg_cp - fake_avg_cp)**2
+
         # Build train ops.
         with tf.variable_scope("train/disc"):
             d_optimizer = tf.train.AdamOptimizer(
                               learning_rate=d_learning_rate, beta1=0.5)
 
-            self.d_train_op = d_optimizer.minimize(d_loss, var_list=d_vars)
+            self.d_train_op = d_optimizer.minimize(
+                                  d_loss,
+                                  var_list=d_vars,
+                              )
 
         with tf.variable_scope("train/gen"):
             g_optimizer = tf.train.AdamOptimizer(
                               learning_rate=g_learning_rate, beta1=0.5)
 
-            self.g_train_op = g_optimizer.minimize(g_loss, var_list=g_vars)
+            self.g_train_op = g_optimizer.minimize(
+                                  g_loss+fm_loss,
+                                  var_list=g_vars,
+                              )
 
         # Build vars_to_save.
         moving_avg_vars = tf.moving_average_variables()
@@ -276,6 +310,7 @@ class DCGAN:
             tf.summary.scalar("gen", g_loss)
             tf.summary.scalar("real", real_loss)
             tf.summary.scalar("fake", fake_loss)
+            tf.summary.scalar("feature_matching", fm_loss)
 
         with tf.name_scope("histogram_summary"):
             for v in self.vars_to_save:
