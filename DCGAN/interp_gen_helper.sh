@@ -1,11 +1,10 @@
 #!/bin/bash
 
-#TIME="2018-01-31T13:28:30.780899"
-TIME="2018-01-31T17:11:04.857384"
+TIME="2018-02-05T14:41:46.252982"
 CONFIG="logdir/ortho/std/config-$TIME"
 FOLDER="logdir/ortho/std/ann-$TIME"
 INFER_CONFIG="logdir/ortho/frac2cell/config-2018-01-26T16:50:11.168027"
-DEVICE=1
+DEVICE=0
 N_SAMPLES=10
 
 echo Generate griddata from $CONFIG ...
