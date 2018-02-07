@@ -2,6 +2,7 @@ import os
 import math
 import glob
 import datetime
+import itertools
 
 import numpy as np
 import tensorflow as tf
@@ -77,7 +78,7 @@ class Generator:
                     filters=1,
                     strides=1,
                     use_bias=True,
-                    bias_initializer=tf.constant_initializer(0.0),
+                    bias_initializer=tf.constant_initializer(0.5),
                     activation=tf.nn.sigmoid,
                     #name="outputs",
                 )
@@ -266,20 +267,40 @@ class DCGAN:
             fake_x = 1.0 - fake_x
             fake_x = (upper - lower)*fake_x + lower
 
-            temper = 300.0
+            default_temper = 300.0
+            self.temper = tf.placeholder_with_default(
+                              default_temper,
+                              shape=[],
+                              name="temperature",
+                          )
+
+            temper = self.temper
 
             # Chemical potentials.
             real_boltz = tf.exp(-real_x / temper)
-            real_boltz = tf.reduce_mean(real_boltz, axis=[1, 2, 3, 4])
-            real_boltz = tf.log(real_boltz)
-            real_avg_cp = tf.reduce_mean(real_boltz)
+            real_boltz = tf.reduce_mean(real_boltz, axis=[1,2,3,4])
+            real_cp = tf.log(real_boltz)
+            real_avg_cp = tf.reduce_mean(real_cp)
 
             fake_boltz = tf.exp(-fake_x / temper)
-            fake_boltz = tf.reduce_mean(fake_boltz, axis=[1, 2, 3, 4])
-            fake_boltz = tf.log(fake_boltz)
-            fake_avg_cp = tf.reduce_mean(fake_boltz)
+            fake_boltz = tf.reduce_mean(fake_boltz, axis=[1,2,3,4])
+            fake_cp = tf.log(fake_boltz)
+            fake_avg_cp = tf.reduce_mean(fake_cp)
 
             fm_loss = (real_avg_cp - fake_avg_cp)**2
+
+        self.feature_matching = tf.placeholder_with_default(
+                                    True,
+                                    shape=[],
+                                    name="feature_matching"
+                                )
+
+        g_total_loss = tf.cond(
+                           self.feature_matching,
+                           lambda: g_loss+fm_loss,
+                           lambda: g_loss,
+                           name="g_total_loss",
+                       )
 
         # Build train ops.
         with tf.variable_scope("train/disc"):
@@ -296,7 +317,7 @@ class DCGAN:
                               learning_rate=g_learning_rate, beta1=0.5)
 
             self.g_train_op = g_optimizer.minimize(
-                                  g_loss+fm_loss,
+                                  g_total_loss,
                                   var_list=g_vars,
                               )
 
@@ -311,6 +332,7 @@ class DCGAN:
             tf.summary.scalar("real", real_loss)
             tf.summary.scalar("fake", fake_loss)
             tf.summary.scalar("feature_matching", fm_loss)
+            tf.summary.scalar("temperature", self.temper)
 
         with tf.name_scope("histogram_summary"):
             for v in self.vars_to_save:
@@ -319,7 +341,7 @@ class DCGAN:
         self.merged_summary = tf.summary.merge_all()
 
 
-    def train(self, checkpoint=None):
+    def train(self, checkpoint=None, start_step=0):
         # Make log paths.
         logdir = self.logdir
 
@@ -341,7 +363,6 @@ class DCGAN:
 
         config = tf.ConfigProto()
         config.gpu_options.allow_growth = True
-
         with tf.Session(config=config) as sess:
             sess.run(tf.global_variables_initializer())
             sess.run(self.iterator.initializer)
@@ -350,9 +371,10 @@ class DCGAN:
                 print("Restoring:", checkpoint)
                 saver.restore(sess, checkpoint)
 
-            for i in range(100000000):
+            for i in itertools.count(start=start_step):
                 # Train discriminator.
                 feed_dict = {
+                    #self.feature_matching: (i > 50000),
                     self.generator.training: True,
                     self.discriminator_real.training: True,
                     self.discriminator_fake.training: True,

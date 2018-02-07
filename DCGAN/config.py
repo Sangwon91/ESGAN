@@ -143,11 +143,14 @@ def cache_ckpt_from_config(*, cache_folder, config):
     except Exception as e:
         raise Exception(str(e) + ", Terminate program")
 
+    # ckpt path example
+    # /path/to/ckpt/save-2018-02-01T20:03:39.639994-35900
     ckpt = ".".join(ckpts[0].split(".")[:-1])
-    ckpt = ckpt.split("/")[-1]
+    ckpt = ckpt.split("/")[-1] # save-2018-02-01T20:03:39.639994-35900
+    final_step = int(ckpt.split("-")[-1]) # 35900 as int
     ckpt = "{}/{}".format(cache_folder, ckpt)
 
-    return ckpt
+    return ckpt, final_step
 
 
 def _test():

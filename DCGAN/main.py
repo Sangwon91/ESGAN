@@ -61,16 +61,16 @@ def main():
 
     write_config_log(args, dcgan.date)
 
+    ckpt = None
+    step = 0
     with tempfile.TemporaryDirectory() as temp_dir:
         if args.restore_config:
-            ckpt = cache_ckpt_from_config(
-                       config=args.restore_config,
-                       cache_folder=temp_dir,
-                   )
-        else:
-            ckpt = None
+            ckpt, step = cache_ckpt_from_config(
+                             config=args.restore_config,
+                             cache_folder=temp_dir,
+                         )
 
-        dcgan.train(ckpt)
+        dcgan.train(checkpoint=ckpt, start_step=step)
 
 
 if __name__ == "__main__":
