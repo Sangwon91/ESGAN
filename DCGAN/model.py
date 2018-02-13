@@ -666,7 +666,7 @@ class Frac2Cell:
         self.merged_summary = tf.summary.merge_all()
 
 
-    def train(self):
+    def train(self, checkpoint=None, start_step=0):
         # Make log paths.
         logdir = self.logdir
 
@@ -694,7 +694,11 @@ class Frac2Cell:
             sess.run(self.iterator.initializer)
             sess.run(self.valid_iterator.initializer)
 
-            for i in range(100000000):
+            if checkpoint:
+                print("Restoring:", checkpoint)
+                saver.restore(sess, checkpoint)
+
+            for i in itertools.count(start=start_step):
                 feed_dict = {
                     self.training: True,
                 }
