@@ -4,3 +4,4 @@ save*
 sample
 *.txt
 *test*
+*tensorboard*
