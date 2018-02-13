@@ -226,6 +226,8 @@ def make_egrid_tuple_dataset(
 
         data = tf.transpose(data, pos1)
 
+        data.set_shape(shape)
+
         return (grid, data)
 
     dataset = tf.data.Dataset.zip((grid_set, data_set))
