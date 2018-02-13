@@ -289,18 +289,18 @@ class DCGAN:
 
             fm_loss = (real_avg_cp - fake_avg_cp)**2
 
-        self.feature_matching = tf.placeholder_with_default(
-                                    True,
-                                    shape=[],
-                                    name="feature_matching"
-                                )
+            self.feature_matching = tf.placeholder_with_default(
+                                        True,
+                                        shape=[],
+                                        name="feature_matching"
+                                    )
 
-        g_total_loss = tf.cond(
-                           self.feature_matching,
-                           lambda: g_loss+fm_loss,
-                           lambda: g_loss,
-                           name="g_total_loss",
-                       )
+            g_total_loss = tf.cond(
+                               self.feature_matching,
+                               lambda: g_loss+fm_loss,
+                               lambda: g_loss,
+                               name="g_total_loss",
+                           )
 
         # Build train ops.
         with tf.variable_scope("train/disc"):
