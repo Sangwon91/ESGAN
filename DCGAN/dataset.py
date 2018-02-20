@@ -379,7 +379,7 @@ class EnergyGridDataset:
 
         self.dataset = dataset
 
-    def write_sample(self, *, x, stem, save_dir="."):
+    def write_visit_sample(self, *, x, stem, save_dir="."):
         lower, upper = self.energy_scale
 
         x = np.array(x.reshape([-1]))
@@ -412,6 +412,18 @@ class EnergyGridDataset:
             ))
         # Write times file.
         x.tofile("{}/{}".format(save_dir, times))
+
+    def write_sample(self, *, x, stem, save_dir="."):
+        lower, upper = self.energy_scale
+
+        x = np.array(x.reshape([-1]))
+
+        if self.invert:
+            x = 1.0 - x
+
+        x = (upper-lower)*x + lower
+        # Write times file.
+        x.tofile("{}/{}.{}".format(save_dir, stem. self.extension))
 
 
 if __name__ == "__main__":
@@ -478,7 +490,8 @@ if __name__ == "__main__":
         grids = sess.run(iterator.get_next())
 
         for i, grid in enumerate(grids):
-            egrid_dataset.write_sample(
+            egrid_dataset.write_visit_sample(
                 x=grid,
                 stem="sample_{}".format(i),
+                save_dir=".",
             )

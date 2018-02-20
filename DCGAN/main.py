@@ -6,10 +6,10 @@ import numpy as np
 import tensorflow as tf
 
 from model import DCGAN
-from config import make_arg_parser, write_config_log, cache_ckpt_from_config
-from dataset import make_energy_grid_dataset
-
-from utils import write_visit_input
+from config import (make_arg_parser,
+                    write_config_log,
+                    cache_ckpt_from_config)
+from dataset import EnergyGridDataset
 
 def main():
     parser = make_arg_parser()
@@ -18,29 +18,22 @@ def main():
 
     energy_scale = args.energy_scale
 
-    output_writer = functools.partial(
-        write_visit_input,
-        energy_scale=energy_scale,
-        invert=args.invert
-    )
-
-    dataset = make_energy_grid_dataset(
+    dataset = EnergyGridDataset(
         path=args.dataset_path,
-        extension=args.extension,
-        move=args.move,
-        rotate=args.rotate,
         shape=args.voxel_size,
-        prefetch_size=300,
-        shuffle_size=300,
+        invert=args.invert,
+        rotate=args.rotate,
+        move=args.move,
+        extension=args.extension,
         energy_limit=args.energy_limit,
         energy_scale=args.energy_scale,
-        invert=args.invert,
+        prefetch_size=300,
+        shuffle_size=300,
     )
 
     dcgan = DCGAN(
         dataset=dataset,
         logdir=args.logdir,
-        output_writer=output_writer,
         save_every=args.save_every,
         batch_size=args.batch_size,
         z_size=args.z_size,

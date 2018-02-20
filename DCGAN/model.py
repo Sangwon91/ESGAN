@@ -162,7 +162,6 @@ class DCGAN:
             logdir,
             batch_size,
             z_size,
-            output_writer,
             save_every,
             voxel_size,
             bottom_size,
@@ -186,13 +185,17 @@ class DCGAN:
         self.date = datetime.datetime.now().isoformat()
 
         self.save_every = save_every
-        self.output_writer = output_writer
         self.logdir = logdir
         self.batch_size = batch_size
         self.size = voxel_size
         self.train_gen_per_disc = train_gen_per_disc
+        self.dataset = dataset
         # Make iterator from the dataset.
-        self.iterator = dataset.batch(batch_size).make_initializable_iterator()
+        self.iterator = (
+            self.dataset.dataset
+            .batch(batch_size)
+            .make_initializable_iterator()
+        )
 
         # Build nueral network.
         self.generator = Generator(
@@ -255,16 +258,17 @@ class DCGAN:
             )
 
         with tf.variable_scope("loss/feature_matching"):
-            # Warning. It's hard-corded.
-            upper = 5000.0
-            lower = -4000.0
+            # MODIFIED. (Response of "Warning. It's hard-corded.")
+            lower, upper = self.dataset.energy_scale
 
             real_x = self.discriminator_real.x
-            real_x = 1.0 - real_x
+            if self.dataset.invert:
+                real_x = 1.0 - real_x
             real_x = (upper - lower)*real_x + lower
 
             fake_x = self.discriminator_fake.x
-            fake_x = 1.0 - fake_x
+            if self.dataset.invert:
+                fake_x = 1.0 - fake_x
             fake_x = (upper - lower)*fake_x + lower
 
             default_temper = 300.0
@@ -409,11 +413,11 @@ class DCGAN:
                     # Generate energy grid samples
                     for j, sample in enumerate(samples):
                         stem = "sample_{}".format(j)
-                        self.output_writer(
+                        self.dataset.write_visit_sample(
+                            x=sample,
                             stem=stem,
-                            grid=sample,
-                            size=self.size,
-                            save_dir=sample_dir)
+                            save_dir=sample_dir,
+                        )
 
                 print("{}/{}  ITER: {}".format(logdir, date, i))
 
@@ -445,13 +449,12 @@ class DCGAN:
 
                 # Generate energy grid samples
                 for sample in samples:
-                    name = "{}/ann_{}.griddata".format(sample_dir, idx)
-                    #self.output_writer(stem, sample, self.size,
-                    #    save_dir=sample_dir)
-                    sample = 1.0 - sample
-                    sample = (5000.0 - (-4000.0))*sample + (-4000.0)
-                    sample = sample.astype(np.float32)
-                    sample.tofile(name)
+                    stem = "ann_{}".format(idx)
+                    self.dataset.write_sample(
+                        x=sample,
+                        stem=stem,
+                        save_dir=sample_dir,
+                    )
 
                     idx += 1
 
@@ -497,13 +500,12 @@ class DCGAN:
 
                 # Generate energy grid samples
                 for sample in samples:
-                    name = "{}/ann_{}.griddata".format(sample_dir, idx)
-                    #self.output_writer(stem, sample, self.size,
-                    #    save_dir=sample_dir)
-                    sample = 1.0 - sample
-                    sample = (5000.0 - (-4000.0))*sample + (-4000.0)
-                    sample = sample.astype(np.float32)
-                    sample.tofile(name)
+                    stem = "ann_{}".format(idx)
+                    self.dataset.write_sample(
+                        x=sample,
+                        stem=stem,
+                        save_dir=sample_dir,
+                    )
 
                     idx += 1
 
