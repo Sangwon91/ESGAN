@@ -426,14 +426,13 @@ class EnergyGridDataset:
         x.tofile("{}/{}.{}".format(save_dir, stem. self.extension))
 
 
-class EGridTupleDataset:
+class EnergyGridTupleDataset:
     def __init__(self, *,
         path,
         shape,
         invert,
         rotate,
         move,
-        extension,
         energy_limit,
         energy_scale,
         cell_length_scale,
@@ -449,7 +448,6 @@ class EGridTupleDataset:
         self.invert = invert
         self.rotate = rotate
         self.move = move
-        self.extension = extension
         self.energy_limit = energy_limit
         self.energy_scale = energy_scale
         self.cell_length_scale = cell_length_scale
@@ -710,14 +708,13 @@ if __name__ == "__main__":
     import os
     os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
-    egrid_dataset = EGridTupleDataset(
+    egrid_dataset = EnergyGridTupleDataset(
                         #path="/home/FRAC32/IZA_CUBIC",
                         path=".",
                         shape=32,
                         invert=True,
                         rotate=True,
                         move=False,
-                        extension="griddata",
                         energy_limit=[-4000, 5000],
                         energy_scale=[-4000, 5000],
                         cell_length_scale=[0.0, 60.0],

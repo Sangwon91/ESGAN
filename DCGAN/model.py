@@ -537,11 +537,14 @@ class Frac2Cell:
 
            cell is normalized.
         """
+        self.dataset = dataset
+        self.validset = validset
+
         with tf.variable_scope("build_dataset"):
             with tf.variable_scope("training"):
                 # Make iterator from the dataset.
                 self.iterator = (
-                    dataset
+                    self.dataset.dataset
                     .batch(batch_size)
                     .make_initializable_iterator()
                 )
@@ -551,7 +554,7 @@ class Frac2Cell:
             with tf.variable_scope("validation"):
                 # Make iterator from the dataset.
                 self.valid_iterator = (
-                    validset
+                    self.validset.dataset
                     .batch(batch_size)
                     .make_initializable_iterator()
                 )
@@ -734,6 +737,10 @@ class Frac2Cell:
                     saver.save(sess, saver_name, global_step=i)
 
                     with open("{}/cell.txt".format(sample_dir), "w") as f:
+                        cmin, cmax = self.dataset.cell_length_scale
+                        cell = [(cmax-cmin)*x + cmin for x in cell]
+                        cell_infer = [(cmax-cmin)*x + cmin for x in cell_infer]
+
                         for c, ci in zip(cell, cell_infer):
                             f.write("{:.3f} {:.3f}, {:.3f} {:.3f}, {:.3f} {:.3f}\n".format(
                                     c[0], ci[0],
@@ -769,18 +776,19 @@ class Frac2Cell:
             for i, gridfile in enumerate(files):
                 # =====================================================
                 # WARNING: Manually normalize. should be checked later.
+                # Checked at 2018-02-20.
                 # =====================================================
                 grid = np.fromfile(gridfile, dtype=np.float32)
-                grid = grid.reshape([1, 32, 32, 32, 1])
+                grid = grid.reshape([1] + self.dataset.shape)
                 # Normalize.
-                maxe = 5000.0
-                mine = -4000.0
+                mine, maxe = self.dataset.energy_scale
 
                 grid[grid > maxe] = maxe
                 grid[grid < mine] = mine
 
-                grid = (grid - mine) / (maxe - mine)
-                grid = 1.0 - grid
+                grid = (grid-mine) / (maxe-mine)
+                if self.dataset.invert:
+                    grid = 1.0 - grid
 
                 grid = grid.astype(np.float32)
 
@@ -790,7 +798,8 @@ class Frac2Cell:
 
                 outputs = sess.run(self.outputs, feed_dict=feed_dict)
 
-                output = 60.0 * outputs[0, ...]
+                cmin, cmax = self.dataset.cell_length_scale
+                output = (cmax-cmin)*outputs[0, ...] + cmin
 
                 outfile = ".".join(gridfile.split(".")[:-1]) + ".grid"
 
@@ -799,7 +808,9 @@ class Frac2Cell:
                         output[0], output[1], output[2]))
 
                     f.write("CELL_ANGLES 90 90 90\n")
-                    f.write("GRID_NUMBERS 32 32 32\n")
+                    f.write("GRID_NUMBERS {s} {s} {s}\n".format(
+                        s=self.dataset.shape[0])
+                    )
 
                 print(output)
                 print("ITER: {}".format(i))
