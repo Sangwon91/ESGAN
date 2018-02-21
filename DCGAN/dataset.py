@@ -423,7 +423,7 @@ class EnergyGridDataset:
 
         x = (upper-lower)*x + lower
         # Write times file.
-        x.tofile("{}/{}.{}".format(save_dir, stem. self.extension))
+        x.tofile("{}/{}.{}".format(save_dir, stem, self.extension))
 
 
 class EnergyGridTupleDataset:

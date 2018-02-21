@@ -12,7 +12,7 @@ from config import (ArgumentParser,
                     make_arg_parser,
                     write_config_log,
                     make_args_from_config)
-from dataset import make_energy_grid_dataset
+from dataset import EnergyGridDataset
 
 def prepare_sample_generation(config):
     """
@@ -76,18 +76,7 @@ def main():
 
     energy_scale = args.energy_scale
 
-    """
-    output_writer = functools.partial(
-        write_griday_input,
-        invert=args.invert,
-        energy_scale=energy_scale,
-        cell_length_scale=[0.0, 1.0], # Dummy values.
-        except_grid=True,
-    )
-    """
-
-    # Will not used. but needed in constructor of DCGAN.
-    dataset = make_energy_grid_dataset(
+    dataset = EnergyGridDataset(
         path=args.dataset_path,
         shape=args.voxel_size,
         invert=args.invert,
@@ -96,14 +85,13 @@ def main():
         extension=args.extension,
         energy_limit=args.energy_limit,
         energy_scale=args.energy_scale,
-        shuffle_size=256,
-        prefetch_size=256,
+        prefetch_size=300,
+        shuffle_size=300,
     )
 
     dcgan = DCGAN(
         dataset=dataset,
         logdir=args.logdir,
-        output_writer=None,
         save_every=args.save_every,
         batch_size=30,
         z_size=args.z_size,

@@ -13,9 +13,7 @@ from config import (ArgumentParser,
                     make_frac2cell_arg_parser,
                     write_config_log,
                     make_args_from_config)
-from dataset import make_egrid_tuple_dataset
-
-from utils import write_griday_input
+from dataset import EnergyGridTupleDataset
 
 def prepare_sample_generation(config, griddata_folder):
     """
@@ -67,14 +65,7 @@ def main():
 
     energy_scale = args.energy_scale
 
-    output_writer = functools.partial(
-        write_griday_input,
-        invert=args.invert,
-        energy_scale=energy_scale,
-        cell_length_scale=args.cell_length_scale,
-    )
-
-    dataset = make_egrid_tuple_dataset(
+    dataset = EnergyGridTupleDataset(
         path=args.dataset_path,
         rotate=args.rotate,
         shape=args.voxel_size,
@@ -87,7 +78,7 @@ def main():
         invert=args.invert,
     )
 
-    validset = make_egrid_tuple_dataset(
+    validset = EnergyGridTupleDataset(
         path=args.validset_path,
         rotate=args.rotate,
         move=args.move,
