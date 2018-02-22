@@ -17,6 +17,12 @@ def str2bool(v):
 # Custom argument parser for file reading.
 class ArgumentParser(argparse.ArgumentParser):
     def convert_arg_line_to_args(self, arg_line):
+        if arg_line.startswith("#"):
+            return []
+
+        # Take args only before # character
+        arg_line = arg_line.split("#")[0]
+
         return arg_line.split()
 
 
