@@ -86,7 +86,7 @@ def main():
         energy_limit=args.energy_limit,
         energy_scale=args.energy_scale,
         prefetch_size=300,
-        shuffle_size=300,
+        shuffle_size=10000,
     )
 
     dcgan = DCGAN(
