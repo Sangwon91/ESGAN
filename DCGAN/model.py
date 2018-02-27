@@ -291,7 +291,8 @@ class DCGAN:
             fake_cp = tf.log(fake_boltz)
             fake_avg_cp = tf.reduce_mean(fake_cp)
 
-            fm_loss = (real_avg_cp - fake_avg_cp)**2
+            #fm_loss = (real_avg_cp - fake_avg_cp)**2
+            fm_loss = tf.abs(real_avg_cp - fake_avg_cp)
 
             self.feature_matching = tf.placeholder_with_default(
                                         True,
