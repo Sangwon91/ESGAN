@@ -2,6 +2,7 @@ import os
 import math
 import glob
 import datetime
+import platform
 import itertools
 
 import numpy as np
@@ -350,6 +351,9 @@ class DCGAN:
 
 
     def train(self, checkpoint=None, start_step=0):
+        # Process Informations.
+        node = platform.uname()[1]
+        pid = os.getpid()
         # Make log paths.
         logdir = self.logdir
 
@@ -423,7 +427,9 @@ class DCGAN:
                             save_dir=sample_dir,
                         )
 
-                print("{}/{}  ITER: {}".format(logdir, date, i))
+                print("NODE:{}, PID:{}, NAME:{}/{}, ITER: {}".format(
+                    node, pid, logdir, date, i)
+                )
 
 
     def generate_samples(self, sample_dir, checkpoint, n_samples):
@@ -676,6 +682,9 @@ class Frac2Cell:
 
 
     def train(self, checkpoint=None, start_step=0):
+        # Process Informations.
+        node = platform.uname()[1]
+        pid = os.getpid()
         # Make log paths.
         logdir = self.logdir
 
@@ -753,7 +762,9 @@ class Frac2Cell:
                                 )
                             )
 
-                print("{}/{}  ITER: {}".format(logdir, date, i))
+                print("NODE:{}, PID:{}, NAME:{}/{}, ITER: {}".format(
+                    node, pid, logdir, date, i)
+                )
 
 
     def inference(self, griddata_folder, ckpt):
