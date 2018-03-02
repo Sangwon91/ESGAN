@@ -284,15 +284,18 @@ class DCGAN:
             real_boltz = tf.exp(-real_x / temper)
             real_boltz = tf.reduce_mean(real_boltz, axis=[1,2,3,4])
             real_cp = tf.log(real_boltz)
-            real_avg_cp = tf.reduce_mean(real_cp)
+            # Calculate statistics of the reals.
+            real_mean, real_std = tf.nn.moments(real_cp, axes=[0])
+            real_std = tf.sqrt(real_std)
 
             fake_boltz = tf.exp(-fake_x / temper)
             fake_boltz = tf.reduce_mean(fake_boltz, axis=[1,2,3,4])
             fake_cp = tf.log(fake_boltz)
-            fake_avg_cp = tf.reduce_mean(fake_cp)
+            # Calculate statistics of the fakes.
+            fake_mean, fake_std = tf.nn.moments(fake_cp, axes=[0])
+            fake_std = tf.sqrt(fake_std)
 
-            #fm_loss = (real_avg_cp - fake_avg_cp)**2
-            fm_loss = tf.abs(real_avg_cp - fake_avg_cp)
+            fm_loss = tf.abs(real_mean-fake_mean) + tf.abs(real_std-fake_std)
 
             self.feature_matching = tf.placeholder_with_default(
                                         True,
