@@ -31,7 +31,6 @@ def make_arg_parser():
 
     # Required arguments
     parser.add_argument("--dataset_path", type=str, required=True)
-    parser.add_argument("--extension", type=str, required=True)
     parser.add_argument("--z_size", type=int, required=True)
     parser.add_argument("--voxel_size", type=int, required=True)
     parser.add_argument("--rate", type=float, required=True)
@@ -40,6 +39,8 @@ def make_arg_parser():
     parser.add_argument("--invert", type=str2bool, required=True)
     parser.add_argument("--energy_limit", type=float, nargs=2, required=True)
     parser.add_argument("--energy_scale", type=float, nargs=2, required=True)
+    parser.add_argument("--cell_length_scale",
+                            type=float, nargs=2, required=True)
     parser.add_argument("--logdir", type=str, required=True)
     parser.add_argument("--save_every", type=int, required=True)
     parser.add_argument("--batch_size", type=int, required=True)

@@ -192,11 +192,16 @@ class DCGAN:
         self.train_gen_per_disc = train_gen_per_disc
         self.dataset = dataset
         # Make iterator from the dataset.
-        self.iterator = (
-            self.dataset.dataset
-            .batch(batch_size)
-            .make_initializable_iterator()
-        )
+        with tf.variable_scope("build_dataset"):
+            # Make iterator from the dataset.
+            self.iterator = (
+                self.dataset.dataset
+                .batch(batch_size)
+                .make_initializable_iterator()
+            )
+
+            # cell_data, grid_data = next_data.
+            self.next_data = self.iterator.get_next()
 
         # Build nueral network.
         self.generator = Generator(
@@ -208,7 +213,7 @@ class DCGAN:
         )
 
         self.discriminator_real = Discriminator(
-            x=self.iterator.get_next(), # dataset.
+            x=self.next_data[1], # Takes grid only.
             batch_size=batch_size,
             voxel_size=voxel_size,
             rate=rate,
@@ -419,10 +424,14 @@ class DCGAN:
                     saver.save(sess, saver_name, global_step=i)
 
                     # Generate energy grid samples
+                    cmin, cmax = self.dataset.cell_length_scale
+                    cell = np.array([(1-cmin) / (cmax-cmin)] * 3, dtype=np.float32)
+
                     for j, sample in enumerate(samples):
                         stem = "sample_{}".format(j)
                         self.dataset.write_visit_sample(
-                            x=sample,
+                            cell=cell,
+                            grid=sample,
                             stem=stem,
                             save_dir=sample_dir,
                         )

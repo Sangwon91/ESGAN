@@ -9,7 +9,7 @@ from model import DCGAN
 from config import (make_arg_parser,
                     write_config_log,
                     cache_ckpt_from_config)
-from dataset import EnergyGridDataset
+from dataset import EnergyGridTupleDataset
 
 def main():
     parser = make_arg_parser()
@@ -18,17 +18,17 @@ def main():
 
     energy_scale = args.energy_scale
 
-    dataset = EnergyGridDataset(
+    dataset = EnergyGridTupleDataset(
         path=args.dataset_path,
-        shape=args.voxel_size,
-        invert=args.invert,
         rotate=args.rotate,
+        shape=args.voxel_size,
         move=args.move,
-        extension=args.extension,
+        prefetch_size=256,
+        shuffle_size=10000,
         energy_limit=args.energy_limit,
         energy_scale=args.energy_scale,
-        prefetch_size=300,
-        shuffle_size=10000,
+        cell_length_scale=args.cell_length_scale,
+        invert=args.invert,
     )
 
     dcgan = DCGAN(
