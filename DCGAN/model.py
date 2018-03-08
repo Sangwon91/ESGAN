@@ -1116,8 +1116,9 @@ class CellResNet:
                         s=self.dataset.shape[0])
                     )
 
-                print(output)
-                print("ITER: {}".format(i))
+                #print(output)
+                if i % 100 == 0:
+                    print("ITER: {}".format(i))
 
 
     def _residual_unit(self, *, x, filters, reduce_size=False):
