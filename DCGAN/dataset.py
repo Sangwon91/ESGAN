@@ -358,6 +358,7 @@ class EnergyGridTupleDataset:
         if self.rotate:
             cell, grid = self._rotate_cell_and_grid(cell, grid)
 
+        cell.set_shape([3])
         return (cell, grid)
 
     def _build_dataset(self):

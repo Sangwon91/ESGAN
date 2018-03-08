@@ -15,6 +15,7 @@ class Generator:
     def __init__(self, *,
             batch_size,
             z_size,
+            c,
             voxel_size,
             bottom_size,
             bottom_filters,
@@ -28,6 +29,7 @@ class Generator:
         """
         self.batch_size = batch_size
         self.z_size = z_size
+        self.c = c
         self.voxel_size = voxel_size
         self.bottom_size = bottom_size
         self.bottom_filters = bottom_filters
@@ -53,11 +55,12 @@ class Generator:
                          name="z",
                      )
 
-        filters = self.bottom_filters
+        z = tf.concat([self.z, self.c], axis=1, name="concat_noise_cell")
 
+        filters = self.bottom_filters
         bs = self.bottom_size
         with tf.variable_scope("bottom"):
-            x = dense(self.z, units=bs*bs*bs*filters)
+            x = dense(z, units=bs*bs*bs*filters)
             x = tf.reshape(x, [self.batch_size, bs, bs, bs, filters])
             x = batch_normalization(x, training=self.training)
             x = tf.nn.relu(x)
@@ -156,6 +159,9 @@ class Discriminator:
                       )
         self.outputs = tf.nn.sigmoid(self.logits, name="outputs")
 
+        self.c_logits = dense(x, units=3, use_bias=True, name="c_logits")
+        self.c_outputs = tf.nn.sigmoid(self.c_logits, name="c_outputs")
+
 
 class DCGAN:
     def __init__(self, *,
@@ -207,6 +213,7 @@ class DCGAN:
         self.generator = Generator(
             batch_size=batch_size,
             z_size=z_size,
+            c=self.next_data[0], # Takes cell only.
             voxel_size=voxel_size,
             bottom_size=bottom_size,
             bottom_filters=bottom_filters,
@@ -255,13 +262,29 @@ class DCGAN:
                 sigmoid_log_with_logits(-fake_logits)
             )
 
+        with tf.variable_scope("loss/real_cell"):
+            real_c_logits = self.discriminator_real.c_logits
+            real_c_loss = tf.nn.sigmoid_cross_entropy_with_logits(
+                              labels=self.next_data[0],
+                              logits=real_c_logits,
+                          )
+            real_c_loss = tf.reduce_mean(real_c_loss)
+
+        with tf.variable_scope("loss/fake_cell"):
+            fake_c_logits = self.discriminator_fake.c_logits
+            fake_c_loss = tf.nn.sigmoid_cross_entropy_with_logits(
+                              labels=self.next_data[0],
+                              logits=fake_c_logits,
+                          )
+            fake_c_loss = tf.reduce_mean(fake_c_loss)
+
         with tf.variable_scope("loss/disc"):
-            d_loss = real_loss + fake_loss
+            d_loss = real_loss + fake_loss + real_c_loss
 
         with tf.variable_scope("loss/gen"):
             g_loss = -tf.reduce_mean(
                 sigmoid_log_with_logits(fake_logits)
-            )
+            ) + fake_c_loss
 
         with tf.variable_scope("loss/feature_matching"):
             # MODIFIED. (Response of "Warning. It's hard-corded.")
@@ -347,6 +370,8 @@ class DCGAN:
             tf.summary.scalar("fake", fake_loss)
             tf.summary.scalar("feature_matching", fm_loss)
             tf.summary.scalar("temperature", self.temper)
+            tf.summary.scalar("real_c_loss", real_c_loss)
+            tf.summary.scalar("fake_c_loss", fake_c_loss)
 
         with tf.name_scope("histogram_summary"):
             for v in self.vars_to_save:
@@ -409,11 +434,17 @@ class DCGAN:
                                       trace_level=tf.RunOptions.FULL_TRACE)
                     run_metadata = tf.RunMetadata()
 
-                    summary_str, samples = sess.run(
-                       [self.merged_summary, self.generator.outputs],
-                       feed_dict=feed_dict,
-                       options=run_options,
-                       run_metadata=run_metadata,
+                    fetches = [
+                        self.merged_summary,
+                        self.generator.c,
+                        self.generator.outputs,
+                    ]
+
+                    summary_str, cells, samples = sess.run(
+                        fetches=fetches,
+                        feed_dict=feed_dict,
+                        options=run_options,
+                        run_metadata=run_metadata,
                     )
 
                     file_writer.add_run_metadata(
@@ -423,11 +454,7 @@ class DCGAN:
 
                     saver.save(sess, saver_name, global_step=i)
 
-                    # Generate energy grid samples
-                    cmin, cmax = self.dataset.cell_length_scale
-                    cell = np.array([(1-cmin) / (cmax-cmin)] * 3, dtype=np.float32)
-
-                    for j, sample in enumerate(samples):
+                    for j, (cell, sample) in enumerate(zip(cells, samples)):
                         stem = "sample_{}".format(j)
                         self.dataset.write_visit_sample(
                             cell=cell,
