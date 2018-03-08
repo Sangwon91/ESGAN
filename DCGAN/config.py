@@ -63,36 +63,6 @@ def make_arg_parser():
     return parser
 
 
-def make_frac2cell_arg_parser():
-    parser = ArgumentParser(fromfile_prefix_chars='@')
-
-    parser.add_argument("--dataset_path", type=str, required=True)
-    parser.add_argument("--validset_path", type=str, required=True)
-    parser.add_argument("--extension", type=str, required=True)
-    parser.add_argument("--voxel_size", type=int, required=True)
-    parser.add_argument("--rate", type=float, required=True)
-    parser.add_argument("--rotate", type=str2bool, required=True)
-    parser.add_argument("--move", type=str2bool, required=True)
-    parser.add_argument("--invert", type=str2bool, required=True)
-    parser.add_argument("--energy_limit", type=float, nargs=2, required=True)
-    parser.add_argument("--energy_scale", type=float, nargs=2, required=True)
-    parser.add_argument("--cell_length_scale",
-                            type=float, nargs=2, required=True)
-    parser.add_argument("--logdir", type=str, required=True)
-    parser.add_argument("--save_every", type=int, required=True)
-    parser.add_argument("--batch_size", type=int, required=True)
-    parser.add_argument("--top_size", type=int, required=True)
-    parser.add_argument("--filter_unit", type=int, required=True)
-    parser.add_argument("--learning_rate", type=float, required=True)
-    parser.add_argument("--scale_factor", type=float, required=True)
-    parser.add_argument("--device", type=str, required=True)
-
-    # Optional arguments
-    parser.add_argument("--restore_config", type=str)
-
-    return parser
-
-
 def make_cell_resnet_arg_parser():
     parser = ArgumentParser(fromfile_prefix_chars='@')
 
