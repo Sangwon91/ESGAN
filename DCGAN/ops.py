@@ -124,7 +124,7 @@ def batch_normalization(
         keep_dims = False
     else:
         # Pixel-wise statistics.
-        size = shape[1:]
+        size = [1] + shape[1:]
         axes = [0]
         keep_dims = True
 
