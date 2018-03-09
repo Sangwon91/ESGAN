@@ -8,12 +8,12 @@ import argparse
 import numpy as np
 import tensorflow as tf
 
-from model import CellResNet
-from config import (ArgumentParser,
-                    make_cell_resnet_arg_parser,
-                    write_config_log,
-                    make_args_from_config)
-from dataset import EnergyGridTupleDataset
+from ..EGGAN.model import CellResNet
+from ..EGGAN.config import (ArgumentParser,
+                            make_cell_resnet_arg_parser,
+                            write_config_log,
+                            make_args_from_config)
+from ..EGGAN.dataset import EnergyGridTupleDataset
 
 def prepare_sample_generation(config, griddata_folder):
     """

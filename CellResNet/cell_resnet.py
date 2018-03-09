@@ -5,11 +5,11 @@ import functools
 import numpy as np
 import tensorflow as tf
 
-from model import CellResNet
-from config import (make_cell_resnet_arg_parser,
-                    write_config_log,
-                    cache_ckpt_from_config)
-from dataset import EnergyGridTupleDataset
+from ..EGGAN.model import CellResNet
+from ..EGGAN.config import (make_cell_resnet_arg_parser,
+                            write_config_log,
+                            cache_ckpt_from_config)
+from ..EGGAN.dataset import EnergyGridTupleDataset
 
 def main():
     parser = make_cell_resnet_arg_parser()
