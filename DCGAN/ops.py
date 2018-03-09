@@ -108,20 +108,53 @@ conv3d_transpose = functools.partial(
 # Source: https://github.com/maxorange/voxel-dcgan/blob/master/ops.py
 # Automatic updator version of batch normalization.
 def batch_normalization(
-        x, training, name="batch_normalization", decay=0.99, epsilon=1e-5):
-    train = training
-
+        x,
+        training,
+        name="batch_normalization",
+        decay=0.99,
+        epsilon=1e-5,
+        global_norm=True):
+    # Get input shape as python list.
     shape = x.get_shape().as_list()
-    with tf.variable_scope(name):
-        beta = tf.get_variable('beta', shape[-1:],
-            initializer=tf.constant_initializer(0.))
-        gamma = tf.get_variable('gamma', shape[-1:],
-            initializer=tf.random_normal_initializer(1., 0.02))
-        moving_mean = tf.get_variable('moving_mean', shape[-1:],
-            initializer=tf.constant_initializer(0.), trainable=False)
-        moving_var = tf.get_variable('moving_var', shape[-1:],
-            initializer=tf.constant_initializer(1.), trainable=False)
 
+    if global_norm:
+        # Channel-wise statistics.
+        size = shape[-1:]
+        axes = list(range(len(shape)-1))
+        keep_dims = False
+    else:
+        # Pixel-wise statistics.
+        size = shape[1:]
+        axes = [0]
+        keep_dims = True
+
+    with tf.variable_scope(name):
+        beta = tf.get_variable(
+            name='beta',
+            shape=size,
+            initializer=tf.constant_initializer(0.0),
+        )
+        gamma = tf.get_variable(
+            name='gamma',
+            shape=size,
+            initializer=tf.random_normal_initializer(1.0, 0.02),
+        )
+        moving_mean = tf.get_variable(
+            name='moving_mean',
+            shape=size,
+            initializer=tf.constant_initializer(0.0),
+            trainable=False,
+        )
+        moving_var = tf.get_variable(
+            name='moving_var',
+            shape=size,
+            initializer=tf.constant_initializer(1.0),
+            trainable=False,
+        )
+
+        # Add moving vars to the tf collection.
+        # The list of moving vars can be obtained with
+        # tf.moving_average_variables().
         if moving_mean not in tf.moving_average_variables():
             collection = tf.GraphKeys.MOVING_AVERAGE_VARIABLES
             tf.add_to_collection(collection, moving_mean)
@@ -129,14 +162,16 @@ def batch_normalization(
 
         def train_mode():
             # execute at training time
-            axes = list(range(len(shape) - 1))
-            # It really works?
-            batch_mean, batch_var = tf.nn.moments(x, axes=axes)
+            batch_mean, batch_var = tf.nn.moments(
+                                        x,
+                                        axes=axes,
+                                        keep_dims=keep_dims,
+                                    )
             update_mean = tf.assign_sub(
                 moving_mean, (1-decay) * (moving_mean-batch_mean)
             )
             update_var = tf.assign_sub(
-                moving_var, (1-decay) * (moving_var- batch_var)
+                moving_var, (1-decay) * (moving_var-batch_var)
             )
 
             # Automatically update global means and variances.
@@ -149,7 +184,7 @@ def batch_normalization(
             return tf.nn.batch_normalization(
                        x, moving_mean, moving_var, beta, gamma, epsilon)
 
-        return tf.cond(train, train_mode, test_mode)
+        return tf.cond(training, train_mode, test_mode)
 
 
 def minibatch_discrimination(x, num_kernels, dim_per_kernel, name="minibatch"):
