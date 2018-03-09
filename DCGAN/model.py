@@ -15,7 +15,6 @@ class Generator:
     def __init__(self, *,
             batch_size,
             z_size,
-            c,
             voxel_size,
             bottom_size,
             bottom_filters,
@@ -29,7 +28,6 @@ class Generator:
         """
         self.batch_size = batch_size
         self.z_size = z_size
-        self.c = c
         self.voxel_size = voxel_size
         self.bottom_size = bottom_size
         self.bottom_filters = bottom_filters
@@ -55,7 +53,7 @@ class Generator:
                          name="z",
                      )
 
-        z = tf.concat([self.z, self.c], axis=1, name="concat_noise_cell")
+        z = self.z
 
         filters = self.bottom_filters
         bs = self.bottom_size
@@ -64,9 +62,24 @@ class Generator:
             x = tf.reshape(x, [self.batch_size, bs, bs, bs, filters])
             x = batch_normalization(x, training=self.training)
             x = tf.nn.relu(x)
+            saved_x = x
 
+        with tf.variable_scope("generate_cell"):
+            # Single hidden layer.
+            x = tf.layers.flatten(x)
+            x = dense(x, units=512, use_bias=True)
+            x = batch_normalization(
+                    x, training=self.training, global_norm=False)
+            x = tf.nn.relu(x)
+            # Final layer, no batchnorm.
+            x = dense(x, units=3, use_bias=True, name="c_logits")
+
+            self.c_logits = x
+            self.c_outputs = tf.nn.sigmoid(x, name="c_outputs")
+
+        # Restore bottom end.
+        x = saved_x
         size = self.bottom_size
-
         while size < self.voxel_size:
             filters //= 2
 
@@ -159,8 +172,17 @@ class Discriminator:
                       )
         self.outputs = tf.nn.sigmoid(self.logits, name="outputs")
 
-        self.c_logits = dense(x, units=3, use_bias=True, name="c_logits")
-        self.c_outputs = tf.nn.sigmoid(self.c_logits, name="c_outputs")
+        with tf.variable_scope("cell_inference"):
+            # Single hidden layer.
+            x = dense(x, units=512, use_bias=True)
+            x = batch_normalization(
+                    x, training=self.training, global_norm=False)
+            x = tf.nn.relu(x)
+            # Final layer, no batchnorm.
+            x = dense(x, units=3, use_bias=True, name="c_logits")
+
+            self.c_logits = x
+            self.c_outputs = tf.nn.sigmoid(x, name="c_outputs")
 
 
 class DCGAN:
@@ -213,7 +235,6 @@ class DCGAN:
         self.generator = Generator(
             batch_size=batch_size,
             z_size=z_size,
-            c=self.next_data[0], # Takes cell only.
             voxel_size=voxel_size,
             bottom_size=bottom_size,
             bottom_filters=bottom_filters,
@@ -264,26 +285,28 @@ class DCGAN:
 
         with tf.variable_scope("loss/real_cell"):
             real_c_logits = self.discriminator_real.c_logits
+            real_c_outputs = self.discriminator_real.c_outputs
+
             real_c_loss = tf.nn.sigmoid_cross_entropy_with_logits(
                               labels=self.next_data[0],
                               logits=real_c_logits,
                           )
             real_c_loss = tf.reduce_mean(real_c_loss)
 
-            real_c_outputs = self.discriminator_real.c_outputs
             real_c_abs_diff = tf.abs(real_c_outputs-self.next_data[0])
             real_c_abs_diff = tf.reduce_mean(real_c_abs_diff)
 
         with tf.variable_scope("loss/fake_cell"):
             fake_c_logits = self.discriminator_fake.c_logits
+            fake_c_outputs = self.discriminator_fake.c_outputs
+
             fake_c_loss = tf.nn.sigmoid_cross_entropy_with_logits(
-                              labels=self.next_data[0],
-                              logits=fake_c_logits,
+                              labels=fake_c_outputs,
+                              logits=self.generator.c_logits,
                           )
             fake_c_loss = tf.reduce_mean(fake_c_loss)
 
-            fake_c_outputs = self.discriminator_fake.c_outputs
-            fake_c_abs_diff = tf.abs(fake_c_outputs-self.next_data[0])
+            fake_c_abs_diff = tf.abs(fake_c_outputs-self.generator.c_outputs)
             fake_c_abs_diff = tf.reduce_mean(fake_c_abs_diff)
 
         with tf.variable_scope("loss/disc"):
@@ -387,6 +410,12 @@ class DCGAN:
             for v in self.vars_to_save:
                 tf.summary.histogram(v.name, v)
 
+        with tf.name_scope("outputs_histogram_summaries"):
+            tf.summary.histogram("real_c_infer", real_c_outputs)
+            tf.summary.histogram("real_c_input", self.next_data[0])
+            tf.summary.histogram("fake_c_inter", fake_c_outputs)
+            tf.summary.histogram("fake_c_input", self.generator.c_outputs)
+
         self.merged_summary = tf.summary.merge_all()
 
 
@@ -446,7 +475,7 @@ class DCGAN:
 
                     fetches = [
                         self.merged_summary,
-                        self.generator.c,
+                        self.generator.c_outputs,
                         self.generator.outputs,
                     ]
 
