@@ -418,19 +418,36 @@ class EnergyGridTupleDataset:
         # Write times file.
         grid.tofile("{}/{}".format(save_dir, times))
 
-    def write_sample(self, *, x, stem, save_dir="."):
-        raise Exception("Do not use")
+    def write_sample(self, *, cell, grid, stem, save_dir="."):
+        # Inverse normalize cell.
+        cmin, cmax = self.cell_length_scale
+        cell = (cmax-cmin)*cell + cmin
 
+        # Inverse normalize grid.
         lower, upper = self.energy_scale
 
-        x = np.array(x.reshape([-1]))
+        grid = np.array(grid.reshape([-1]))
 
         if self.invert:
-            x = 1.0 - x
+            grid = 1.0 - grid
 
-        x = (upper-lower)*x + lower
+        grid = (upper-lower)*grid + lower
+
+        # Make file name.
+        filename = "{}/{}.grid".format(save_dir, stem)
+
+        # Write header file.
+        with open(filename, "w") as gridfile:
+            gridfile.write(
+                textwrap.dedent("""\
+                    CELL_PARAMETERS        {}        {}        {}
+                        CELL_ANGLES        90        90        90
+                       GRID_NUMBERS        {}        {}        {}"""
+                    .format(*cell, *self.shape[:-1])
+                )
+            )
         # Write times file.
-        x.tofile("{}/{}.{}".format(save_dir, stem. self.extension))
+        grid.tofile(filename+"data")
 
 
 if __name__ == "__main__":

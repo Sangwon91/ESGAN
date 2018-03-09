@@ -525,18 +525,24 @@ class DCGAN:
             for i in range(n_iters):
                 print("... Generating {:d}".format(idx))
 
+                fetches = [
+                    self.generator.c_outputs,
+                    self.generator.outputs,
+                ]
+
                 feed_dict = {}
 
-                samples = sess.run(
-                    self.generator.outputs,
+                cells, samples = sess.run(
+                    fetches=fetches,
                     feed_dict=feed_dict,
                 )
 
                 # Generate energy grid samples
-                for sample in samples:
+                for cell, sample in zip(cells, samples):
                     stem = "ann_{}".format(idx)
                     self.dataset.write_sample(
-                        x=sample,
+                        cell=cell,
+                        grid=sample,
                         stem=stem,
                         save_dir=sample_dir,
                     )
@@ -565,29 +571,35 @@ class DCGAN:
 
             thetas = np.linspace(0, 0.5*np.pi, size)
 
-            z0 = np.random.uniform(-1.0, 1.0, size=[z_size])
+            z0 = np.random.normal(0.0, 1.0, size=[z_size])
             for i in range(n_iters):
                 print("... Generating {:d}".format(idx))
 
-                z1 = np.random.uniform(-1.0, 1.0, size=[z_size])
+                z1 = np.random.normal(0.0, 1.0, size=[z_size])
                 z = np.array(
                     [(math.cos(t)*z0 + math.sin(t)*z1) for t in thetas]
                 )
+
+                fetches = [
+                    self.generator.c_outputs,
+                    self.generator.outputs,
+                ]
 
                 feed_dict = {
                     self.generator.z: z,
                 }
 
-                samples = sess.run(
-                    self.generator.outputs,
+                cells, samples = sess.run(
+                    fetches=fetches,
                     feed_dict=feed_dict,
                 )
 
                 # Generate energy grid samples
-                for sample in samples:
+                for cell, sample in zip(cells, samples):
                     stem = "ann_{}".format(idx)
                     self.dataset.write_sample(
-                        x=sample,
+                        cell=cell,
+                        grid=sample,
                         stem=stem,
                         save_dir=sample_dir,
                     )

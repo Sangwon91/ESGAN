@@ -12,7 +12,7 @@ from config import (ArgumentParser,
                     make_arg_parser,
                     write_config_log,
                     make_args_from_config)
-from dataset import EnergyGridDataset
+from dataset import EnergyGridTupleDataset
 
 def prepare_sample_generation(config):
     """
@@ -63,6 +63,7 @@ def main():
     gen_parser.add_argument("--config", type=str)
     gen_parser.add_argument("--n_samples", type=str)
     gen_parser.add_argument("--device", type=str)
+    gen_parser.add_argument("--interpolate", action="store_true")
 
     # Parse args for gen.py
     gen_args = gen_parser.parse_args()
@@ -76,17 +77,17 @@ def main():
 
     energy_scale = args.energy_scale
 
-    dataset = EnergyGridDataset(
+    dataset = EnergyGridTupleDataset(
         path=args.dataset_path,
-        shape=args.voxel_size,
-        invert=args.invert,
         rotate=args.rotate,
+        shape=args.voxel_size,
         move=args.move,
-        extension=args.extension,
+        prefetch_size=256,
+        shuffle_size=10000,
         energy_limit=args.energy_limit,
         energy_scale=args.energy_scale,
-        prefetch_size=300,
-        shuffle_size=10000,
+        cell_length_scale=args.cell_length_scale,
+        invert=args.invert,
     )
 
     dcgan = DCGAN(
@@ -112,7 +113,10 @@ def main():
 
     ann_folder, ckpt = prepare_sample_generation(gen_args.config)
 
-    dcgan.generate_samples(ann_folder, ckpt, int(gen_args.n_samples))
+    if gen_args.interpolate:
+        dcgan.interpolate_samples(ann_folder, ckpt, int(gen_args.n_samples))
+    else:
+        dcgan.generate_samples(ann_folder, ckpt, int(gen_args.n_samples))
 
 
 if __name__ == "__main__":
