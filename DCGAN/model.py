@@ -270,6 +270,10 @@ class DCGAN:
                           )
             real_c_loss = tf.reduce_mean(real_c_loss)
 
+            real_c_outputs = self.discriminator_real.c_outputs
+            real_c_abs_diff = tf.abs(real_c_outputs-self.next_data[0])
+            real_c_abs_diff = tf.reduce_mean(real_c_abs_diff)
+
         with tf.variable_scope("loss/fake_cell"):
             fake_c_logits = self.discriminator_fake.c_logits
             fake_c_loss = tf.nn.sigmoid_cross_entropy_with_logits(
@@ -277,6 +281,10 @@ class DCGAN:
                               logits=fake_c_logits,
                           )
             fake_c_loss = tf.reduce_mean(fake_c_loss)
+
+            fake_c_outputs = self.discriminator_fake.c_outputs
+            fake_c_abs_diff = tf.abs(fake_c_outputs-self.next_data[0])
+            fake_c_abs_diff = tf.reduce_mean(fake_c_abs_diff)
 
         with tf.variable_scope("loss/disc"):
             d_loss = real_loss + fake_loss + real_c_loss
@@ -372,6 +380,8 @@ class DCGAN:
             tf.summary.scalar("temperature", self.temper)
             tf.summary.scalar("real_c_loss", real_c_loss)
             tf.summary.scalar("fake_c_loss", fake_c_loss)
+            tf.summary.scalar("real_c_abs_diff", real_c_abs_diff)
+            tf.summary.scalar("fake_c_abs_diff", fake_c_abs_diff)
 
         with tf.name_scope("histogram_summary"):
             for v in self.vars_to_save:
