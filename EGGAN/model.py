@@ -425,7 +425,7 @@ class DCGAN:
         pid = os.getpid()
         # Make log paths.
         logdir = self.logdir
-
+        # Short alias for date.
         date = self.date
 
         writer_name = "{}/run-{}".format(logdir, date)
