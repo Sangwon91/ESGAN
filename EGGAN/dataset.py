@@ -440,9 +440,9 @@ class EnergyGridTupleDataset:
         with open(filename, "w") as gridfile:
             gridfile.write(
                 textwrap.dedent("""\
-                    CELL_PARAMETERS        {}        {}        {}
-                        CELL_ANGLES        90        90        90
-                       GRID_NUMBERS        {}        {}        {}"""
+                    CELL_PARAMETERS  {:10.3f} {:10.3f} {:10.3f}
+                        CELL_ANGLES        90       90       90
+                       GRID_NUMBERS        {}       {}       {}"""
                     .format(*cell, *self.shape[:-1])
                 )
             )
