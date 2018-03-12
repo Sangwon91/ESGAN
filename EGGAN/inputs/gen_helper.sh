@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ROOT_PATH="/home/lsw/Workspace/EGRID_GAN/EGGAN/tensorboard/pair"
-TIME="2018-03-10T03:12:37.053432"
+TIME="2018-03-12T12:02:51.752591"
 CONFIG="$ROOT_PATH/config-$TIME"
 FOLDER="$ROOT_PATH/ann-$TIME"
 DEVICE=3
