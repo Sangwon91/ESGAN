@@ -310,12 +310,13 @@ class DCGAN:
             fake_c_abs_diff = tf.reduce_mean(fake_c_abs_diff)
 
         with tf.variable_scope("loss/disc"):
-            d_loss = real_loss + fake_loss + real_c_loss
+            d_loss = real_loss + fake_loss
+            d_total_loss = d_loss + real_c_loss
 
         with tf.variable_scope("loss/gen"):
             g_loss = -tf.reduce_mean(
                 sigmoid_log_with_logits(fake_logits)
-            ) + fake_c_loss
+            )
 
         with tf.variable_scope("loss/feature_matching"):
             # MODIFIED. (Response of "Warning. It's hard-corded.")
@@ -341,12 +342,25 @@ class DCGAN:
             temper = self.temper
 
             # Chemical potentials.
+            # Save variables for learning of generator.
+            saved_real_mean = tf.Variable(
+                0.0, dtype=tf.float32, trainable=False, name="saved_real_mean")
+            saved_real_std = tf.Variable(
+                1.0, dtype=tf.float32, trainable=False, name="saved_real_std")
+
             real_boltz = tf.exp(-real_x / temper)
             real_boltz = tf.reduce_mean(real_boltz, axis=[1,2,3,4])
             real_cp = tf.log(real_boltz)
             # Calculate statistics of the reals.
             real_mean, real_std = tf.nn.moments(real_cp, axes=[0])
             real_std = tf.sqrt(real_std)
+
+            # save ops
+            with tf.variable_scope("fm_save_ops"):
+                save_real_ops = [
+                    tf.assign(saved_real_mean, real_mean),
+                    tf.assign(saved_real_std, real_std),
+                ]
 
             fake_boltz = tf.exp(-fake_x / temper)
             fake_boltz = tf.reduce_mean(fake_boltz, axis=[1,2,3,4])
@@ -355,7 +369,11 @@ class DCGAN:
             fake_mean, fake_std = tf.nn.moments(fake_cp, axes=[0])
             fake_std = tf.sqrt(fake_std)
 
-            fm_loss = tf.abs(real_mean-fake_mean) + tf.abs(real_std-fake_std)
+            # Use saved mean and std.
+            fm_loss = (
+                tf.abs(saved_real_mean - fake_mean) +
+                tf.abs(saved_real_std - fake_std)
+            )
 
             self.feature_matching = tf.placeholder_with_default(
                                         True,
@@ -365,8 +383,8 @@ class DCGAN:
 
             g_total_loss = tf.cond(
                                self.feature_matching,
-                               lambda: g_loss+fm_loss,
-                               lambda: g_loss,
+                               lambda: g_loss+fake_c_loss+fm_loss,
+                               lambda: g_loss+fake_c_loss,
                                name="g_total_loss",
                            )
 
@@ -375,10 +393,11 @@ class DCGAN:
             d_optimizer = tf.train.AdamOptimizer(
                               learning_rate=d_learning_rate, beta1=0.5)
 
-            self.d_train_op = d_optimizer.minimize(
-                                  d_loss,
-                                  var_list=d_vars,
-                              )
+            with tf.control_dependencies(save_real_ops):
+                self.d_train_op = d_optimizer.minimize(
+                                      d_total_loss,
+                                      var_list=d_vars,
+                                  )
 
         with tf.variable_scope("train/gen"):
             g_optimizer = tf.train.AdamOptimizer(
@@ -394,29 +413,64 @@ class DCGAN:
         self.vars_to_save = d_vars + g_vars + moving_avg_vars
 
         # Build summaries.
-        with tf.name_scope("scalar_summary"):
-            tf.summary.scalar("disc", d_loss)
-            tf.summary.scalar("gen", g_loss)
-            tf.summary.scalar("real", real_loss)
-            tf.summary.scalar("fake", fake_loss)
-            tf.summary.scalar("feature_matching", fm_loss)
-            tf.summary.scalar("temperature", self.temper)
-            tf.summary.scalar("real_c_loss", real_c_loss)
-            tf.summary.scalar("fake_c_loss", fake_c_loss)
-            tf.summary.scalar("real_c_abs_diff", real_c_abs_diff)
-            tf.summary.scalar("fake_c_abs_diff", fake_c_abs_diff)
+        g_summaries = list()
+        d_summaries = list()
 
-        with tf.name_scope("histogram_summary"):
-            for v in self.vars_to_save:
-                tf.summary.histogram(v.name, v)
+        with tf.name_scope("scalar_summaries"):
+            d_summaries += [
+                tf.summary.scalar("d_total_loss", d_total_loss),
+                tf.summary.scalar("d_gan_loss", d_loss),
+                tf.summary.scalar("d_real_loss", real_loss),
+                tf.summary.scalar("d_fake_loss", fake_loss),
+                tf.summary.scalar("d_real_c_loss", real_c_loss),
+                tf.summary.scalar("d_fake_c_loss", fake_c_loss),
+                tf.summary.scalar("d_real_c_abs_diff", real_c_abs_diff),
+                tf.summary.scalar("d_fake_c_abs_diff", fake_c_abs_diff),
+            ]
 
-        with tf.name_scope("outputs_histogram_summaries"):
-            tf.summary.histogram("real_c_infer", real_c_outputs)
-            tf.summary.histogram("real_c_input", self.next_data[0])
-            tf.summary.histogram("fake_c_inter", fake_c_outputs)
-            tf.summary.histogram("fake_c_input", self.generator.c_outputs)
+            g_summaries += [
+                tf.summary.scalar("g_total_loss", g_total_loss),
+                tf.summary.scalar("g_gan_loss", g_loss),
+                tf.summary.scalar("g_feature_matching_loss", fm_loss),
+                tf.summary.scalar("g_temperature", self.temper),
+                tf.summary.scalar("g_fake_c_loss", fake_c_loss),
+                tf.summary.scalar("g_fake_c_abs_diff", fake_c_abs_diff),
+            ]
 
-        self.merged_summary = tf.summary.merge_all()
+        with tf.name_scope("histogram_summaries"):
+            d_moving_vars = [
+                v for v in moving_avg_vars if v.name.startswith("d")
+            ]
+            g_moving_vars = [
+                v for v in moving_avg_vars if v.name.startswith("g")
+            ]
+
+            d_summaries += [
+                tf.summary.histogram(v.name, v) for v in d_vars+d_moving_vars
+            ]
+
+            g_summaries += [
+                tf.summary.histogram(v.name, v) for v in g_vars+g_moving_vars
+            ]
+
+
+        with tf.name_scope("output_histogram_summaries"):
+            gen_c = self.generator.c_outputs
+
+            d_summaries += [
+                tf.summary.histogram("d_real_c_infer", real_c_outputs),
+                tf.summary.histogram("d_real_c_input", self.next_data[0]),
+                tf.summary.histogram("d_fake_c_infer", fake_c_outputs),
+                tf.summary.histogram("d_fake_c_input", gen_c),
+            ]
+
+            g_summaries += [
+                tf.summary.histogram("g_fake_c_infer", fake_c_outputs),
+                tf.summary.histogram("g_fake_c_input", gen_c),
+            ]
+
+        self.d_merged_summary = tf.summary.merge(d_summaries)
+        self.g_merged_summary = tf.summary.merge(g_summaries)
 
 
     def train(self, checkpoint=None, start_step=0):
@@ -455,49 +509,46 @@ class DCGAN:
             for i in itertools.count(start=start_step):
                 # Train discriminator.
                 feed_dict = {
-                    #self.feature_matching: (i > 50000),
                     self.generator.training: True,
                     self.discriminator_real.training: True,
                     self.discriminator_fake.training: True,
                 }
 
-                sess.run([self.d_train_op], feed_dict=feed_dict)
+                save_step = (i%self.save_every == 0)
+
+                # Build fetches.
+                d_fetches = [self.d_merged_summary, self.d_train_op]
+                g_fetches = [
+                    self.g_merged_summary,
+                    self.generator.c_outputs,
+                    self.generator.outputs,
+                    self.g_train_op,
+                ]
+
+                if not save_step:
+                    # Take train ops only.
+                    d_fetches = d_fetches[-1]
+                    g_fetches = g_fetches[-1]
+
+                d_result = sess.run(d_fetches, feed_dict=feed_dict)
 
                 for _ in range(self.train_gen_per_disc):
-                    sess.run([self.g_train_op], feed_dict=feed_dict)
+                    g_result = sess.run(g_fetches, feed_dict=feed_dict)
 
-                if i % self.save_every == 0:
-                    feed_dict = {}
+                if save_step:
+                    d_summary_str, _ = d_result
+                    g_summary_str, cells, grids, _ = g_result
 
-                    run_options = tf.RunOptions(
-                                      trace_level=tf.RunOptions.FULL_TRACE)
-                    run_metadata = tf.RunMetadata()
-
-                    fetches = [
-                        self.merged_summary,
-                        self.generator.c_outputs,
-                        self.generator.outputs,
-                    ]
-
-                    summary_str, cells, samples = sess.run(
-                        fetches=fetches,
-                        feed_dict=feed_dict,
-                        options=run_options,
-                        run_metadata=run_metadata,
-                    )
-
-                    file_writer.add_run_metadata(
-                        run_metadata, "step_{}".format(i)
-                    )
-                    file_writer.add_summary(summary_str, i)
+                    file_writer.add_summary(d_summary_str, i)
+                    file_writer.add_summary(g_summary_str, i)
 
                     saver.save(sess, saver_name, global_step=i)
 
-                    for j, (cell, sample) in enumerate(zip(cells, samples)):
+                    for j, (cell, grid) in enumerate(zip(cells, grids)):
                         stem = "sample_{}".format(j)
                         self.dataset.write_visit_sample(
                             cell=cell,
-                            grid=sample,
+                            grid=grid,
                             stem=stem,
                             save_dir=sample_dir,
                         )
