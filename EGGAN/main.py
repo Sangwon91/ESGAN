@@ -6,13 +6,13 @@ import numpy as np
 import tensorflow as tf
 
 from model import DCGAN
-from config import (make_arg_parser,
+from config import (make_eggan_arg_parser,
                     write_config_log,
                     cache_ckpt_from_config)
 from dataset import EnergyGridTupleDataset
 
 def main():
-    parser = make_arg_parser()
+    parser = make_eggan_arg_parser()
     args = parser.parse_args()
     os.environ["CUDA_VISIBLE_DEVICES"] = args.device
 
