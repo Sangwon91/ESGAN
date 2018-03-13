@@ -204,7 +204,8 @@ class DCGAN:
             l2_loss,
             g_learning_rate,
             d_learning_rate,
-            train_gen_per_disc):
+            train_gen_per_disc,
+            in_temper):
 
         try:
             os.makedirs(logdir)
@@ -218,6 +219,7 @@ class DCGAN:
         self.batch_size = batch_size
         self.size = voxel_size
         self.train_gen_per_disc = train_gen_per_disc
+        self.in_temper = in_temper
         self.dataset = dataset
         # Make iterator from the dataset.
         with tf.variable_scope("build_dataset"):
@@ -509,6 +511,7 @@ class DCGAN:
             for i in itertools.count(start=start_step):
                 # Train discriminator.
                 feed_dict = {
+                    self.temper: self.in_temper,
                     self.generator.training: True,
                     self.discriminator_real.training: True,
                     self.discriminator_fake.training: True,

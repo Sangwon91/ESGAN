@@ -9,7 +9,7 @@ import tensorflow as tf
 
 from model import DCGAN
 from config import (ArgumentParser,
-                    make_arg_parser,
+                    make_eggan_arg_parser,
                     write_config_log,
                     make_args_from_config)
 from dataset import EnergyGridTupleDataset
@@ -69,7 +69,7 @@ def main():
     gen_args = gen_parser.parse_args()
     os.environ["CUDA_VISIBLE_DEVICES"] = gen_args.device
 
-    parser = make_arg_parser()
+    parser = make_eggan_arg_parser()
 
     # Parse original configs
     args = make_args_from_config(gen_args.config)
@@ -109,6 +109,7 @@ def main():
         minibatch_dim_per_kernel=args.minibatch_dim_per_kernel,
         l2_loss=args.l2_loss,
         train_gen_per_disc=args.train_gen_per_disc,
+        in_temper=args.in_temper,
     )
 
     ann_folder, ckpt = prepare_sample_generation(gen_args.config)

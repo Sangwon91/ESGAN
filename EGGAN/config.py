@@ -56,9 +56,9 @@ def make_eggan_arg_parser():
     parser.add_argument("--l2_loss", type=str2bool, required=True)
     parser.add_argument("--train_gen_per_disc", type=int, required=True)
     parser.add_argument("--device", type=str, required=True)
-    parser.add_argument("--temperature", type=float, required=True)
 
     # Optional arguments
+    parser.add_argument("--in_temper", type=float, default=300.0)
     parser.add_argument("--restore_config", type=str)
 
     return parser
