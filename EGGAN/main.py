@@ -50,7 +50,8 @@ def main():
         minibatch_dim_per_kernel=args.minibatch_dim_per_kernel,
         l2_loss=args.l2_loss,
         train_gen_per_disc=args.train_gen_per_disc,
-        in_temper=args.in_temper
+        in_temper=args.in_temper,
+        feature_matching=args.feature_matching,
     )
 
     write_config_log(args, dcgan.date)

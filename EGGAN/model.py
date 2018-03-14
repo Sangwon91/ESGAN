@@ -205,7 +205,8 @@ class DCGAN:
             g_learning_rate,
             d_learning_rate,
             train_gen_per_disc,
-            in_temper):
+            in_temper,
+            feature_matching):
 
         try:
             os.makedirs(logdir)
@@ -220,6 +221,7 @@ class DCGAN:
         self.size = voxel_size
         self.train_gen_per_disc = train_gen_per_disc
         self.in_temper = in_temper
+        self.feature_matching = feature_matching
         self.dataset = dataset
         # Make iterator from the dataset.
         with tf.variable_scope("build_dataset"):
@@ -377,18 +379,10 @@ class DCGAN:
                 tf.abs(saved_real_std - fake_std)
             )
 
-            self.feature_matching = tf.placeholder_with_default(
-                                        True,
-                                        shape=[],
-                                        name="feature_matching"
-                                    )
+            g_total_loss = g_loss + fake_c_loss
 
-            g_total_loss = tf.cond(
-                               self.feature_matching,
-                               lambda: g_loss+fake_c_loss+fm_loss,
-                               lambda: g_loss+fake_c_loss,
-                               name="g_total_loss",
-                           )
+            if self.feature_matching:
+                g_total_loss += fm_loss
 
         # Build train ops.
         with tf.variable_scope("train/disc"):
@@ -437,6 +431,10 @@ class DCGAN:
                 tf.summary.scalar("g_temperature", self.temper),
                 tf.summary.scalar("g_fake_c_loss", fake_c_loss),
                 tf.summary.scalar("g_fake_c_abs_diff", fake_c_abs_diff),
+                #tf.summary.scalar("g_fm_real_mean", saved_real_mean),
+                #tf.summary.scalar("g_fm_real_std", saved_real_std),
+                #tf.summary.scalar("g_fm_fake_mean", fake_mean),
+                #tf.summary.scalar("g_fm_fake_std", fake_std),
             ]
 
         with tf.name_scope("histogram_summaries"):
