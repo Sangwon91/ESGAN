@@ -110,7 +110,7 @@ def main():
         l2_loss=args.l2_loss,
         train_gen_per_disc=args.train_gen_per_disc,
         in_temper=args.in_temper,
-        feature_matching=feature_matching,
+        feature_matching=args.feature_matching,
     )
 
     ann_folder, ckpt = prepare_sample_generation(gen_args.config)
