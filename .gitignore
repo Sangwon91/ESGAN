@@ -5,3 +5,4 @@ sample
 *.txt
 *test*
 *tensorboard*
+*inputs*
