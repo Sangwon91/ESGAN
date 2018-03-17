@@ -317,11 +317,6 @@ class DCGAN:
             d_loss = real_loss + fake_loss
             d_total_loss = d_loss + real_c_loss
 
-        with tf.variable_scope("loss/gen"):
-            g_loss = -tf.reduce_mean(
-                sigmoid_log_with_logits(fake_logits)
-            )
-
         with tf.variable_scope("loss/feature_matching"):
             # MODIFIED. (Response of "Warning. It's hard-corded.")
             lower, upper = self.dataset.energy_scale
@@ -379,7 +374,11 @@ class DCGAN:
                 tf.abs(saved_real_std - fake_std)
             )
 
-            g_total_loss = g_loss + fake_c_loss
+        with tf.variable_scope("loss/gen"):
+            g_loss = -tf.reduce_mean(
+                sigmoid_log_with_logits(fake_logits)
+            )
+            g_total_loss = g_loss + 0.1*fake_c_loss
 
             if self.feature_matching:
                 g_total_loss += fm_loss
