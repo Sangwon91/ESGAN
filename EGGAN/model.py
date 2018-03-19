@@ -277,14 +277,20 @@ class DCGAN:
 
         with tf.variable_scope("loss/real"):
             real_logits = self.discriminator_real.logits
-            real_loss = -tf.reduce_mean(
-                sigmoid_log_with_logits(real_logits)
+            real_loss = tf.reduce_mean(
+                tf.nn.sigmoid_cross_entropy_with_logits(
+                    logits=real_logits,
+                    labels=0.9*tf.ones_like(real_logits),
+                )
             )
 
         with tf.variable_scope("loss/fake"):
             fake_logits = self.discriminator_fake.logits
-            fake_loss = -tf.reduce_mean(
-                sigmoid_log_with_logits(-fake_logits)
+            fake_loss = tf.reduce_mean(
+                tf.nn.sigmoid_cross_entropy_with_logits(
+                    logits=fake_logits,
+                    labels=tf.zeros_like(fake_logits),
+                )
             )
 
         with tf.variable_scope("loss/real_cell"):
@@ -375,9 +381,13 @@ class DCGAN:
             )
 
         with tf.variable_scope("loss/gen"):
-            g_loss = -tf.reduce_mean(
-                sigmoid_log_with_logits(fake_logits)
+            g_loss = tf.reduce_mean(
+                tf.nn.sigmoid_cross_entropy_with_logits(
+                    logits=fake_logits,
+                    labels=tf.ones_like(fake_logits),
+                )
             )
+
             g_total_loss = g_loss + 0.1*fake_c_loss
 
             if self.feature_matching:
