@@ -61,7 +61,7 @@ def make_eggan_arg_parser():
     # Optional arguments
     parser.add_argument("--in_temper", type=float, default=300.0)
     parser.add_argument("--feature_matching", type=str2bool, default=True)
-    parser.add_argument("--restore_config", type=str)
+    parser.add_argument("--restore_ckpt", type=str)
 
     return parser
 

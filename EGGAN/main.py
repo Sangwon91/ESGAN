@@ -1,14 +1,12 @@
 import os
-import tempfile
-import functools
+import pathlib
 
 import numpy as np
 import tensorflow as tf
 
 from model import DCGAN
 from config import (make_eggan_arg_parser,
-                    write_config_log,
-                    cache_ckpt_from_config)
+                    write_config_log)
 from dataset import EnergyGridTupleDataset
 
 def main():
@@ -56,16 +54,14 @@ def main():
 
     write_config_log(args, dcgan.date)
 
-    ckpt = None
-    step = 0
-    with tempfile.TemporaryDirectory() as temp_dir:
-        if args.restore_config:
-            ckpt, step = cache_ckpt_from_config(
-                             config=args.restore_config,
-                             cache_folder=temp_dir,
-                         )
+    if args.restore_ckpt:
+        # Extract steps
+        name = pathlib.Path(args.restore_ckpt).name
+        step = int(name.split("-")[-1])
+    else:
+        step = 0
 
-        dcgan.train(checkpoint=ckpt, start_step=step)
+    dcgan.train(checkpoint=args.restore_ckpt, start_step=step)
 
 
 if __name__ == "__main__":
