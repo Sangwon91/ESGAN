@@ -275,12 +275,17 @@ class DCGAN:
         d_vars = [v for v in train_vars if v.name.startswith("discriminator/")]
         g_vars = [v for v in train_vars if v.name.startswith("generator/")]
 
+        # Loss function parameters.
+        one_side_label = 0.8
+        weight_cell_real = 1.0
+        weight_cell_fake = 0.1
+
         with tf.variable_scope("loss/real"):
             real_logits = self.discriminator_real.logits
             real_loss = tf.reduce_mean(
                 tf.nn.sigmoid_cross_entropy_with_logits(
                     logits=real_logits,
-                    labels=0.9*tf.ones_like(real_logits),
+                    labels=one_side_label*tf.ones_like(real_logits),
                 )
             )
 
@@ -321,7 +326,7 @@ class DCGAN:
 
         with tf.variable_scope("loss/disc"):
             d_loss = real_loss + fake_loss
-            d_total_loss = d_loss + real_c_loss
+            d_total_loss = d_loss + weight_cell_real*real_c_loss
 
         with tf.variable_scope("loss/feature_matching"):
             # MODIFIED. (Response of "Warning. It's hard-corded.")
@@ -388,7 +393,7 @@ class DCGAN:
                 )
             )
 
-            g_total_loss = g_loss + 0.1*fake_c_loss
+            g_total_loss = g_loss + weight_cell_fake*fake_c_loss
 
             if self.feature_matching:
                 g_total_loss += fm_loss
@@ -440,10 +445,6 @@ class DCGAN:
                 tf.summary.scalar("g_temperature", self.temper),
                 tf.summary.scalar("g_fake_c_loss", fake_c_loss),
                 tf.summary.scalar("g_fake_c_abs_diff", fake_c_abs_diff),
-                #tf.summary.scalar("g_fm_real_mean", saved_real_mean),
-                #tf.summary.scalar("g_fm_real_std", saved_real_std),
-                #tf.summary.scalar("g_fm_fake_mean", fake_mean),
-                #tf.summary.scalar("g_fm_fake_std", fake_std),
             ]
 
         with tf.name_scope("histogram_summaries"):
