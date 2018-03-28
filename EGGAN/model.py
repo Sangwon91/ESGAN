@@ -502,7 +502,8 @@ class DCGAN:
         except:
             print("error on os.mkdir?")
 
-        saver = tf.train.Saver(var_list=self.vars_to_save, max_to_keep=2)
+        # max_to_keep=None will save all checkpoints.
+        saver = tf.train.Saver(var_list=self.vars_to_save, max_to_keep=None)
         file_writer = tf.summary.FileWriter(
                           writer_name, tf.get_default_graph())
 
@@ -576,9 +577,12 @@ class DCGAN:
             saver.restore(sess, checkpoint)
 
             try:
+                print("Try to make save directory...")
                 os.makedirs(sample_dir)
             except Exception as e:
                 print(e)
+                print("Stop generation")
+                return
 
             size = self.batch_size
 
@@ -621,9 +625,12 @@ class DCGAN:
             saver.restore(sess, checkpoint)
 
             try:
+                print("Try to make save directory...")
                 os.makedirs(sample_dir)
             except Exception as e:
                 print(e)
+                print("Stop generation")
+                return
 
             size = self.batch_size
             z_size = self.generator.z_size

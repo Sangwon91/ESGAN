@@ -1,6 +1,7 @@
 import os
 import sys
 import glob
+import pathlib
 import shutil
 import argparse
 
@@ -160,19 +161,39 @@ def cache_ckpt_from_config(*, cache_folder, config):
     return ckpt, final_step
 
 
+def find_config_from_checkpoint(checkpoint):
+    # strict=True will raise an exception if file does not exist.
+    path = pathlib.Path(checkpoint + ".data-00000-of-00001").resolve()
+
+    # Checkpoint format: /path/to/ckpt/save-2018-02-01T20:03:39.639994-35900
+    # stem not a name. because ".data-00000-of-00001" is added to ckpt.
+    name = path.stem
+    parent = path.parent
+
+    # Extract time, remove "save" and "steps" at front and tail of the name.
+    time = "-".join(name.split("-")[1:-1])
+    # Generate config path.
+    config = "{}/config-{}".format(parent, time)
+
+    return config
+
+
 def _test():
     """
     parser = make_arg_parser()
     args = parser.parse_args(sys.argv[1:])
 
     print(args.__dict__)
-    """
 
     import tempfile
 
     with tempfile.TemporaryDirectory() as temp_dir:
         ckpt = cache_ckpt_from_config(cache_folder=temp_dir, config=sys.argv[1])
         print(ckpt)
+    """
+
+    print(find_config_from_checkpoint(checkpoint="/home/lsw/Workspace/EGRID_GAN/EGGAN/tensorboard/eggan/zeo-100/save-2018-03-21T15:48:06.635430-1565000"))
+
 
 if __name__ == "__main__":
     _test()

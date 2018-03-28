@@ -1,8 +1,9 @@
-import os
-import glob
-import shutil
 import argparse
 import functools
+import glob
+import os
+import pathlib
+import shutil
 
 import numpy as np
 import tensorflow as tf
@@ -11,57 +12,16 @@ from model import DCGAN
 from config import (ArgumentParser,
                     make_eggan_arg_parser,
                     write_config_log,
-                    make_args_from_config)
+                    make_args_from_config,
+                    find_config_from_checkpoint)
 from dataset import EnergyGridTupleDataset
-
-def prepare_sample_generation(config):
-    """
-    1. Generate sample dir.
-    2. Copy lastest checkpoint.
-
-    """
-    # Get file name (not a path)
-    config_name = config.split("/")[-1]
-    # Get parent path
-    config_folder = "/".join(config.split("/")[:-1])
-    # Extract path
-    date = "-".join(config_name.split("-")[1:])
-
-    # Make sample dir
-    ann_folder = "{}/ann-{}".format(config_folder, date)
-    expression = "{}/save-{}-*".format(config_folder, date)
-    ckpts = glob.glob(expression)
-
-    try:
-        print(">>>>>> Removing folder if exist...")
-        shutil.rmtree(ann_folder)
-    except Exception as e:
-        print(e, "but keep going")
-
-    try:
-        print(">>>>>> Making folder...")
-        os.makedirs(ann_folder)
-    except Exception as e:
-        print(e, "but keep going")
-
-    try:
-        print(">>>>>> Copying ckeckpoint...")
-        for f in ckpts:
-            shutil.copy2(f, ann_folder)
-    except Exception as e:
-        raise Exception(str(e) + ", Terminate program")
-
-    ckpt = ".".join(ckpts[0].split(".")[:-1])
-    ckpt = ckpt.split("/")[-1]
-    ckpt = ann_folder + "/" + ckpt
-
-    return ann_folder, ckpt
 
 def main():
     # Custom argparser.
     gen_parser = ArgumentParser()
-    gen_parser.add_argument("--config", type=str)
-    gen_parser.add_argument("--n_samples", type=str)
+    gen_parser.add_argument("--checkpoint", type=str)
+    gen_parser.add_argument("--n_samples", type=int)
+    gen_parser.add_argument("--savedir", type=str)
     gen_parser.add_argument("--device", type=str)
     gen_parser.add_argument("--interpolate", action="store_true")
 
@@ -71,11 +31,10 @@ def main():
 
     parser = make_eggan_arg_parser()
 
+    config = find_config_from_checkpoint(gen_args.checkpoint)
     # Parse original configs
-    args = make_args_from_config(gen_args.config)
+    args = make_args_from_config(config)
     args = parser.parse_args(args)
-
-    energy_scale = args.energy_scale
 
     dataset = EnergyGridTupleDataset(
         path=args.dataset_path,
@@ -94,7 +53,7 @@ def main():
         dataset=dataset,
         logdir=args.logdir,
         save_every=args.save_every,
-        batch_size=25,
+        batch_size=50,
         z_size=args.z_size,
         voxel_size=args.voxel_size,
         bottom_size=args.bottom_size,
@@ -113,12 +72,18 @@ def main():
         feature_matching=args.feature_matching,
     )
 
-    ann_folder, ckpt = prepare_sample_generation(gen_args.config)
-
     if gen_args.interpolate:
-        dcgan.interpolate_samples(ann_folder, ckpt, int(gen_args.n_samples))
+        dcgan.interpolate_samples(
+            gen_args.savedir,
+            gen_args.checkpoint,
+            gen_args.n_samples,
+        )
     else:
-        dcgan.generate_samples(ann_folder, ckpt, int(gen_args.n_samples))
+        dcgan.generate_samples(
+            gen_args.savedir,
+            gen_args.checkpoint,
+            gen_args.n_samples
+        )
 
 
 if __name__ == "__main__":
