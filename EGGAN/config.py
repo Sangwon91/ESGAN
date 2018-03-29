@@ -6,13 +6,12 @@ import shutil
 import argparse
 
 def str2bool(v):
-    is_true = v.lower() in ("yes", "true", "t", "1")
-    is_false = v.lower() in ("no", "false", "f", "0")
-
-    if (not is_true) and (not is_false):
+    if v.lower() in ("yes", "true", "t", "1"):
+        return True
+    elif v.lower() in ("no", "false", "f", "0"):
+        return False
+    else:
         raise Exception("Invalid str for bool cast: {}".format(v))
-
-    return is_true
 
 
 # Custom argument parser for file reading.
