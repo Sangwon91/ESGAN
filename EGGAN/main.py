@@ -4,7 +4,7 @@ import pathlib
 import numpy as np
 import tensorflow as tf
 
-from model import DCGAN
+from model import EGGAN
 from config import (make_eggan_arg_parser,
                     write_config_log)
 from dataset import EnergyGridTupleDataset
@@ -29,7 +29,7 @@ def main():
         invert=args.invert,
     )
 
-    dcgan = DCGAN(
+    eggan = EGGAN(
         dataset=dataset,
         logdir=args.logdir,
         save_every=args.save_every,
@@ -52,7 +52,7 @@ def main():
         feature_matching=args.feature_matching,
     )
 
-    write_config_log(args, dcgan.date)
+    write_config_log(args, eggan.date)
 
     if args.restore_ckpt:
         # Extract steps
@@ -61,7 +61,7 @@ def main():
     else:
         step = 0
 
-    dcgan.train(checkpoint=args.restore_ckpt, start_step=step)
+    eggan.train(checkpoint=args.restore_ckpt, start_step=step)
 
 
 if __name__ == "__main__":

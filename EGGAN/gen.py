@@ -8,7 +8,7 @@ import shutil
 import numpy as np
 import tensorflow as tf
 
-from model import DCGAN
+from model import EGGAN
 from config import (ArgumentParser,
                     make_eggan_arg_parser,
                     write_config_log,
@@ -49,7 +49,7 @@ def main():
         invert=args.invert,
     )
 
-    dcgan = DCGAN(
+    eggan = EGGAN(
         dataset=dataset,
         logdir=args.logdir,
         save_every=args.save_every,
@@ -73,13 +73,13 @@ def main():
     )
 
     if gen_args.interpolate:
-        dcgan.interpolate_samples(
+        eggan.interpolate_samples(
             gen_args.savedir,
             gen_args.checkpoint,
             gen_args.n_samples,
         )
     else:
-        dcgan.generate_samples(
+        eggan.generate_samples(
             gen_args.savedir,
             gen_args.checkpoint,
             gen_args.n_samples
