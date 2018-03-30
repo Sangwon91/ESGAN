@@ -482,7 +482,6 @@ class EGGAN:
         self.d_merged_summary = tf.summary.merge(d_summaries)
         self.g_merged_summary = tf.summary.merge(g_summaries)
 
-
     def train(self, checkpoint=None, start_step=0):
         # Process Informations.
         node = platform.uname()[1]
@@ -518,6 +517,8 @@ class EGGAN:
                 saver.restore(sess, checkpoint)
 
             for i in itertools.count(start=start_step):
+                t1 = datetime.datetime.now()
+
                 # Train discriminator.
                 feed_dict = {
                     self.temper: self.in_temper,
@@ -565,12 +566,17 @@ class EGGAN:
                             save_dir=sample_dir,
                         )
 
-                print("NODE:{}, PID:{}, NAME:{}/{}, ITER: {}".format(
-                    node, pid, logdir, date, i)
+                # Calculate duration time of a step.
+                t2 = datetime.datetime.now()
+                dt = t2 - t1
+                duration = "{:.3f}".format(dt.seconds + dt.microseconds*1e-6)
+
+                print(
+                    "NODE:{}, PID:{}, NAME:{}/{}, ITER: {}, DURATION: {} sec"
+                    .format(node, pid, logdir, date, i, duration)
                 )
 
-
-    def generate_samples(self, sample_dir, checkpoint, n_samples):
+    def generate_samples(self, *, sample_dir, checkpoint, n_samples):
         saver = tf.train.Saver(var_list=self.vars_to_save, max_to_keep=1)
 
         with tf.Session() as sess:
@@ -617,8 +623,7 @@ class EGGAN:
 
             print("Done")
 
-
-    def interpolate_samples(self, sample_dir, checkpoint, n_samples):
+    def interpolate_samples(self, *, sample_dir, checkpoint, n_samples):
         saver = tf.train.Saver(var_list=self.vars_to_save, max_to_keep=1)
 
         with tf.Session() as sess:
@@ -676,6 +681,53 @@ class EGGAN:
                     idx += 1
 
                 z0 = z1
+
+            print("Done")
+
+    def generate_samples_from_fixed_noise(self, *, z, sample_dir, checkpoint):
+        saver = tf.train.Saver(var_list=self.vars_to_save, max_to_keep=1)
+
+        with tf.Session() as sess:
+            saver.restore(sess, checkpoint)
+
+            try:
+                print("Try to make save directory...")
+                os.makedirs(sample_dir)
+            except Exception as e:
+                print(e)
+                print("Stop generation")
+                return
+
+            size = self.batch_size
+
+            idx = 0
+            n_iters = math.ceil(n_samples / size)
+            for i in range(n_iters):
+                print("... Generating {:d}".format(idx))
+
+                fetches = [
+                    self.generator.c_outputs,
+                    self.generator.outputs,
+                ]
+
+                feed_dict = {}
+
+                cells, samples = sess.run(
+                    fetches=fetches,
+                    feed_dict=feed_dict,
+                )
+
+                # Generate energy grid samples
+                for cell, sample in zip(cells, samples):
+                    stem = "ann_{}".format(idx)
+                    self.dataset.write_sample(
+                        cell=cell,
+                        grid=sample,
+                        stem=stem,
+                        save_dir=sample_dir,
+                    )
+
+                    idx += 1
 
             print("Done")
 
