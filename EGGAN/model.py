@@ -643,13 +643,18 @@ class EGGAN:
             idx = 0
             n_iters = n_samples
 
-            thetas = np.linspace(0, 0.5*np.pi, size)
+            thetas = np.linspace(0, 0.5*np.pi, size, endpoint=False)
 
             z0 = np.random.normal(0.0, 1.0, size=[z_size])
+            z_init = np.array(z0) # Copy start z.
             for i in range(n_iters):
                 print("... Generating {:d}".format(idx))
 
-                z1 = np.random.normal(0.0, 1.0, size=[z_size])
+                if i == n_iters-1:
+                    z1 = z_init
+                else:
+                    z1 = np.random.normal(0.0, 1.0, size=[z_size])
+
                 z = np.array(
                     [(math.cos(t)*z0 + math.sin(t)*z1) for t in thetas]
                 )
@@ -684,9 +689,19 @@ class EGGAN:
 
             print("Done")
 
-    def generate_samples_from_fixed_noise(self, *, z, sample_dir, checkpoint):
-        saver = tf.train.Saver(var_list=self.vars_to_save, max_to_keep=1)
+    def generate_sample_from_fixed_z(self, *, z, sample_dir, checkpoint):
+        if self.batch_size != 1:
+            raise Exception("batch_size != 1")
 
+        if z.size != self.generator.z_size:
+            raise Exception("difference z_size is feeded.")
+        # Same as expand_dims but more general.
+        z = z.reshape([1, z.size])
+
+        # Extract simulation step from ckpt.
+        step = checkpoint.split("-")[-1]
+
+        saver = tf.train.Saver(var_list=self.vars_to_save, max_to_keep=1)
         with tf.Session() as sess:
             saver.restore(sess, checkpoint)
 
@@ -695,41 +710,36 @@ class EGGAN:
                 os.makedirs(sample_dir)
             except Exception as e:
                 print(e)
-                print("Stop generation")
-                return
+                print("Keep generation")
 
             size = self.batch_size
 
-            idx = 0
-            n_iters = math.ceil(n_samples / size)
-            for i in range(n_iters):
-                print("... Generating {:d}".format(idx))
+            fetches = [
+                self.generator.c_outputs,
+                self.generator.outputs,
+            ]
 
-                fetches = [
-                    self.generator.c_outputs,
-                    self.generator.outputs,
-                ]
+            feed_dict = {
+                self.generator.z: z,
+            }
 
-                feed_dict = {}
+            cells, samples = sess.run(
+                fetches=fetches,
+                feed_dict=feed_dict,
+            )
 
-                cells, samples = sess.run(
-                    fetches=fetches,
-                    feed_dict=feed_dict,
-                )
+            # Generate energy grid samples
+            cell, sample = (cells[0, ...], samples[0, ...])
 
-                # Generate energy grid samples
-                for cell, sample in zip(cells, samples):
-                    stem = "ann_{}".format(idx)
-                    self.dataset.write_sample(
-                        cell=cell,
-                        grid=sample,
-                        stem=stem,
-                        save_dir=sample_dir,
-                    )
+            stem = "ann_{}".format(step)
+            self.dataset.write_sample(
+                cell=cell,
+                grid=sample,
+                stem=stem,
+                save_dir=sample_dir,
+            )
 
-                    idx += 1
-
-            print("Done")
+            print("Done,", step)
 
 
 class CellResNet:

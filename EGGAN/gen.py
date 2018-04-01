@@ -23,11 +23,18 @@ def main():
     gen_parser.add_argument("--n_samples", type=int)
     gen_parser.add_argument("--savedir", type=str)
     gen_parser.add_argument("--device", type=str)
-    gen_parser.add_argument("--interpolate", action="store_true")
+    gen_parser.add_argument("--batch_size", type=int)
+    gen_parser.add_argument("--type", choices=["normal", "interp", "step"])
 
     # Parse args for gen.py
     gen_args = gen_parser.parse_args()
     os.environ["CUDA_VISIBLE_DEVICES"] = gen_args.device
+
+    if gen_args.batch_size:
+        batch_size = gen_args.batch_size
+    else:
+        # Assign default values.
+        batch_size = 1 if (gen_args.type == "step") else 50
 
     parser = make_eggan_arg_parser()
 
@@ -53,7 +60,7 @@ def main():
         dataset=dataset,
         logdir=args.logdir,
         save_every=args.save_every,
-        batch_size=50,
+        batch_size=batch_size,
         z_size=args.z_size,
         voxel_size=args.voxel_size,
         bottom_size=args.bottom_size,
@@ -72,18 +79,38 @@ def main():
         feature_matching=args.feature_matching,
     )
 
-    if gen_args.interpolate:
+    if gen_args.type == "interp":
         eggan.interpolate_samples(
-            gen_args.savedir,
-            gen_args.checkpoint,
-            gen_args.n_samples,
+            sample_dir=gen_args.savedir,
+            checkpoint=gen_args.checkpoint,
+            n_samples=gen_args.n_samples,
         )
-    else:
+    elif gen_args.type == "normal":
         eggan.generate_samples(
-            gen_args.savedir,
-            gen_args.checkpoint,
-            gen_args.n_samples
+            sample_dir=gen_args.savedir,
+            checkpoint=gen_args.checkpoint,
+            n_samples=gen_args.n_samples
         )
+    elif gen_args.type == "step":
+        z = np.random.normal(loc=0, scale=1, size=args.z_size)
+
+        # Get all checkpoints from checkpoint data.
+        expression = "-".join(gen_args.checkpoint.split("-")[:-1])
+        expression += "-*.meta"
+        # [:-5] removes ".meta" at the end of the name of matching file.
+        ckpts = [match[:-5] for match in glob.iglob(expression)]
+        ckpts = [(int(c.split("-")[-1]), c) for c in ckpts]
+        ckpts.sort()
+
+        ckpts = [c[1] for c in ckpts]
+
+        for ckpt in ckpts:
+            print("Making:", ckpt)
+            eggan.generate_sample_from_fixed_z(
+                z=z,
+                sample_dir=gen_args.savedir,
+                checkpoint=ckpt,
+            )
 
 
 if __name__ == "__main__":
