@@ -43,7 +43,7 @@ class Generator:
         self.training = tf.placeholder_with_default(
                             False, shape=(), name="training")
 
-        # Create z if not feeded.
+        # Create z if not fed.
         if self.z is None:
             self.z = tf.random_normal(
                          shape=[self.batch_size, self.z_size],
@@ -694,7 +694,7 @@ class EGGAN:
             raise Exception("batch_size != 1")
 
         if z.size != self.generator.z_size:
-            raise Exception("difference z_size is feeded.")
+            raise Exception("difference z_size is fed.")
         # Same as expand_dims but more general.
         z = z.reshape([1, z.size])
 
