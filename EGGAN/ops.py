@@ -3,14 +3,6 @@ import functools
 
 import tensorflow as tf
 
-def sigmoid_log_with_logits(x):
-    """Equivalent to log(sigmoid(x)) but numerically safe."""
-    with tf.variable_scope("sigmoid_log_with_logits"):
-        y = tf.minimum(x, 0.0) - tf.log(1.0 + tf.exp(-tf.abs(x)))
-
-    return y
-
-
 kernel_initializer = tf.random_normal_initializer(0.0, 0.02)
 
 
@@ -21,17 +13,6 @@ dense = functools.partial(
     kernel_initializer=kernel_initializer,
 )
 
-"""
-conv3d = functools.partial(
-    tf.layers.conv3d,
-    kernel_size=5,
-    strides=2,
-    padding="SAME",
-    activation=None,
-    use_bias=False,
-    kernel_initializer=kernel_initializer,
-)
-"""
 
 def pbc_pad3d(x, lp, rp, name="PBC"):
     with tf.variable_scope(name):
@@ -130,23 +111,23 @@ def batch_normalization(
 
     with tf.variable_scope(name):
         beta = tf.get_variable(
-            name='beta',
+            name="beta",
             shape=size,
             initializer=tf.constant_initializer(0.0),
         )
         gamma = tf.get_variable(
-            name='gamma',
+            name="gamma",
             shape=size,
             initializer=tf.random_normal_initializer(1.0, 0.02),
         )
         moving_mean = tf.get_variable(
-            name='moving_mean',
+            name="moving_mean",
             shape=size,
             initializer=tf.constant_initializer(0.0),
             trainable=False,
         )
         moving_var = tf.get_variable(
-            name='moving_var',
+            name="moving_var",
             shape=size,
             initializer=tf.constant_initializer(1.0),
             trainable=False,
