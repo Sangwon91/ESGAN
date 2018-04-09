@@ -96,15 +96,13 @@ def main():
 
         # Get all checkpoints from checkpoint data.
         expression = "-".join(gen_args.checkpoint.split("-")[:-1])
-        expression += "-*.meta"
-        # [:-5] removes ".meta" at the end of the name of matching file.
-        ckpts = [match[:-5] for match in glob.iglob(expression)]
-        ckpts = [(int(c.split("-")[-1]), c) for c in ckpts]
-        ckpts.sort()
+        # 27 samples.
+        indices = list(range(0, 10000, 1000))
+        indices += list(range(10000, 100000, 10000))
+        indices += list(range(100000, 1000000, 100000))
 
-        ckpts = [c[1] for c in ckpts]
-
-        for ckpt in ckpts:
+        for index in indices:
+            ckpt = "{}-{}".format(expression, index)
             print("Making:", ckpt)
             eggan.generate_sample_from_fixed_z(
                 z=z,
