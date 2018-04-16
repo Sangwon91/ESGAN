@@ -67,7 +67,7 @@ class Generator:
         with tf.variable_scope("generate_cell"):
             # Single hidden layer.
             x = tf.layers.flatten(x)
-            x = dense(x, units=512, use_bias=True)
+            x = dense(x, units=512)
             x = batch_normalization(
                     x, training=self.training, global_norm=False)
             x = tf.nn.relu(x)
@@ -97,7 +97,6 @@ class Generator:
                     use_bias=True,
                     bias_initializer=tf.constant_initializer(0.5),
                     activation=tf.nn.sigmoid,
-                    #name="outputs",
                 )
 
         self.outputs = x
@@ -142,7 +141,7 @@ class Discriminator:
         with tf.variable_scope("bottom"):
             x = self.x
             x = tf.layers.dropout(x, rate=self.rate, training=self.training)
-            x = conv3d(x, filters=filters, use_bias=1, strides=1)
+            x = conv3d(x, filters=filters, use_bias=True, strides=1)
             x = tf.nn.leaky_relu(x)
 
         size = self.voxel_size
@@ -167,14 +166,13 @@ class Discriminator:
 
         self.logits = dense(x,
                           units=1,
-                          #use_bias=True,
                           name="logits",
                       )
         self.outputs = tf.nn.sigmoid(self.logits, name="outputs")
 
         with tf.variable_scope("cell_inference"):
             # Single hidden layer.
-            x = dense(x, units=512, use_bias=True)
+            x = dense(x, units=512)
             x = batch_normalization(
                     x, training=self.training, global_norm=False)
             x = tf.nn.relu(x)
