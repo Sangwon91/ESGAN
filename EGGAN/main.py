@@ -4,13 +4,13 @@ import pathlib
 import numpy as np
 import tensorflow as tf
 
-from model import EGGAN
-from config import (make_eggan_arg_parser,
+from model import ESGAN
+from config import (make_esgan_arg_parser,
                     write_config_log)
 from dataset import EnergyGridTupleDataset
 
 def main():
-    parser = make_eggan_arg_parser()
+    parser = make_esgan_arg_parser()
     args = parser.parse_args()
     os.environ["CUDA_VISIBLE_DEVICES"] = args.device
 
@@ -29,7 +29,7 @@ def main():
         invert=args.invert,
     )
 
-    eggan = EGGAN(
+    esgan = ESGAN(
         dataset=dataset,
         logdir=args.logdir,
         save_every=args.save_every,
@@ -52,7 +52,7 @@ def main():
         feature_matching=args.feature_matching,
     )
 
-    write_config_log(args, eggan.date)
+    write_config_log(args, esgan.date)
 
     if args.restore_ckpt:
         # Extract steps
@@ -61,7 +61,7 @@ def main():
     else:
         step = 0
 
-    eggan.train(checkpoint=args.restore_ckpt, start_step=step)
+    esgan.train(checkpoint=args.restore_ckpt, start_step=step)
 
 
 if __name__ == "__main__":

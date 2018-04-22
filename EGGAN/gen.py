@@ -8,9 +8,9 @@ import shutil
 import numpy as np
 import tensorflow as tf
 
-from model import EGGAN
+from model import ESGAN
 from config import (ArgumentParser,
-                    make_eggan_arg_parser,
+                    make_esgan_arg_parser,
                     write_config_log,
                     make_args_from_config,
                     find_config_from_checkpoint)
@@ -36,7 +36,7 @@ def main():
         # Assign default values.
         batch_size = 1 if (gen_args.type == "step") else 50
 
-    parser = make_eggan_arg_parser()
+    parser = make_esgan_arg_parser()
 
     config = find_config_from_checkpoint(gen_args.checkpoint)
     # Parse original configs
@@ -56,7 +56,7 @@ def main():
         invert=args.invert,
     )
 
-    eggan = EGGAN(
+    esgan = ESGAN(
         dataset=dataset,
         logdir=args.logdir,
         save_every=args.save_every,
@@ -80,13 +80,13 @@ def main():
     )
 
     if gen_args.type == "interp":
-        eggan.interpolate_samples(
+        esgan.interpolate_samples(
             sample_dir=gen_args.savedir,
             checkpoint=gen_args.checkpoint,
             n_samples=gen_args.n_samples,
         )
     elif gen_args.type == "normal":
-        eggan.generate_samples(
+        esgan.generate_samples(
             sample_dir=gen_args.savedir,
             checkpoint=gen_args.checkpoint,
             n_samples=gen_args.n_samples
@@ -104,7 +104,7 @@ def main():
         for index in indices:
             ckpt = "{}-{}".format(expression, index)
             print("Making:", ckpt)
-            eggan.generate_sample_from_fixed_z(
+            esgan.generate_sample_from_fixed_z(
                 z=z,
                 sample_dir=gen_args.savedir,
                 checkpoint=ckpt,

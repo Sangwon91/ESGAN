@@ -183,7 +183,7 @@ class Discriminator:
             self.c_outputs = tf.nn.sigmoid(x, name="c_outputs")
 
 
-class EGGAN:
+class ESGAN:
     def __init__(self, *,
             dataset,
             logdir,
