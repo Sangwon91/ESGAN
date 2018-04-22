@@ -5,7 +5,7 @@ import textwrap
 import numpy as np
 import tensorflow as tf
 
-class EnergyGridTupleDataset:
+class EnergyShapeDataset:
     def __init__(self, *,
         path,
         shape,

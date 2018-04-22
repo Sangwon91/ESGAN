@@ -7,7 +7,7 @@ import tensorflow as tf
 from model import ESGAN
 from config import (make_esgan_arg_parser,
                     write_config_log)
-from dataset import EnergyGridTupleDataset
+from dataset import EnergyShapeDataset
 
 def main():
     parser = make_esgan_arg_parser()
@@ -16,7 +16,7 @@ def main():
 
     energy_scale = args.energy_scale
 
-    dataset = EnergyGridTupleDataset(
+    dataset = EnergyShapeDataset(
         path=args.dataset_path,
         rotate=args.rotate,
         shape=args.voxel_size,

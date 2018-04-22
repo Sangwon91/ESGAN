@@ -14,7 +14,7 @@ from config import (ArgumentParser,
                     write_config_log,
                     make_args_from_config,
                     find_config_from_checkpoint)
-from dataset import EnergyGridTupleDataset
+from dataset import EnergyShapeDataset
 
 def main():
     # Custom argparser.
@@ -43,7 +43,7 @@ def main():
     args = make_args_from_config(config)
     args = parser.parse_args(args)
 
-    dataset = EnergyGridTupleDataset(
+    dataset = EnergyShapeDataset(
         path=args.dataset_path,
         rotate=args.rotate,
         shape=args.voxel_size,
