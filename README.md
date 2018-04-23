@@ -1,3 +1,3 @@
-# Energy Shape GAN (ESEGAN)
+# Energy Shape GAN (ESGAN)
 
 GAN for the generation of energy shapes.
