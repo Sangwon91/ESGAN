@@ -1,1 +1,3 @@
-# GANs for the Energy Grid Generation
+# Energy Shape GAN (ESEGAN)
+
+GAN for the generation of energy shapes.
