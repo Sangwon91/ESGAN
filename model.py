@@ -156,6 +156,7 @@ class Discriminator:
                 _, _, _, size, filters = x.get_shape().as_list()
 
         x = tf.layers.flatten(x)
+        x_before_minibatch = x
 
         if self.minibatch:
             x = minibatch_discrimination(
@@ -172,7 +173,7 @@ class Discriminator:
 
         with tf.variable_scope("cell_inference"):
             # Single hidden layer.
-            x = dense(x, units=512)
+            x = dense(x_before_minibatch, units=512)
             x = batch_normalization(
                     x, training=self.training, global_norm=False)
             x = tf.nn.relu(x)
