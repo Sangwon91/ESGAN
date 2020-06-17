@@ -7,7 +7,7 @@
 
 ## Dataset preparation
 
-You can generate energy shapes using [GRIDAY](https://github.com/Sangwon91/GRIDAY) from `cssr` files.  [ZEO++](http://www.zeoplusplus.org/examples.html) can convert `cif` file to `cssr` file.
+You can generate energy shapes using [GRIDAY](https://github.com/Sangwon91/GRIDAY) from `cssr` files.
 
 ## Input arguments
 
