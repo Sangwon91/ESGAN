@@ -4,6 +4,11 @@
 
 <img src="doc/ESGAN.png" width=800>
 
+
+## Dataset preparation
+
+You can generate energy shapes using [GRIDAY](https://github.com/Sangwon91/GRIDAY) from `cssr` files.  [ZEO++](http://www.zeoplusplus.org/examples.html) can convert `cif` file to `cssr` file.
+
 ## Input arguments
 
 ```
@@ -36,4 +41,3 @@
 --in_temper                300.0
 #--restore_ckpt
 ```
-
